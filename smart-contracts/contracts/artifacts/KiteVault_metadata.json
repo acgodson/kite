@@ -516,43 +516,6 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "_splitsCount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "enum KiteVault.PaymentInterval",
-						"name": "_interval",
-						"type": "uint8"
-					}
-				],
-				"name": "calculateDueDates",
-				"outputs": [
-					{
-						"internalType": "uint256[]",
-						"name": "dueDates",
-						"type": "uint256[]"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "checkBlock",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
 						"name": "shares",
 						"type": "uint256"
 					}
@@ -686,45 +649,6 @@
 						"internalType": "uint256[]",
 						"name": "dueDates",
 						"type": "uint256[]"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "campaignID",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "tradeId",
-						"type": "uint256"
-					}
-				],
-				"name": "getTradeDetails",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "total",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "settled",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256[]",
-						"name": "dueDates",
-						"type": "uint256[]"
-					},
-					{
-						"internalType": "bool",
-						"name": "closed",
-						"type": "bool"
 					}
 				],
 				"stateMutability": "view",
@@ -870,6 +794,19 @@
 						"internalType": "address",
 						"name": "",
 						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "prev",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "maxAssets",
+						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -1142,7 +1079,13 @@
 			{
 				"inputs": [],
 				"name": "withdraw",
-				"outputs": [],
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
 				"stateMutability": "nonpayable",
 				"type": "function"
 			},
@@ -1502,11 +1445,19 @@
 			]
 		},
 		"KiteVault.sol": {
-			"keccak256": "0xae677c6796c47974b3cf974f3be59d9801c3cc5e6ba1f18cf2620570a48e142c",
+			"keccak256": "0x107d36586140b60749f8a9ab0a32b15f5de775b45bc5cfb4eb5f9808317da389",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://87bfded51065f41f6d5ea1f64cbe72cf3de4c1c4a957c7341d67505765fae8f1",
-				"dweb:/ipfs/QmUXwiHL7UxQ2ky2ChGb6sXqXvjGw71TAawfZG4C1r1shV"
+				"bzz-raw://09afffb765caa8d4cfc839eca1dbef2d9607e4eadcf886e86727aa8c1fb7df07",
+				"dweb:/ipfs/QmYgcnWi77YrE14AB3qQC1Lxq7Cfv7ZSYaAFYMfoz6nYSP"
+			]
+		},
+		"KiteVaultHelpers.sol": {
+			"keccak256": "0x52665b93a6838e6cac24f4da0ba42987e241507942c4cc6ecb3a0cc7b1a1ed6f",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://5e70b20c6672f818362c90ec49101223d56eef1f95b89996a34e9880b204aed6",
+				"dweb:/ipfs/QmTty4zPuNXKexGk9vYHXkX6oThrdvgWq4Q43ALhsXjuUi"
 			]
 		}
 	},

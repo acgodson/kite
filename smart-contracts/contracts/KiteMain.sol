@@ -19,7 +19,7 @@ contract KiteMain is AccessControl {
         address vaultAddress;
         uint256 interestRate;
         PaymentInterval paymentInterval;
-        uint256 maxDuration;
+        uint256 splitsCount;
     }
 
     mapping(uint256 => uint256) private tradeCounters;
@@ -42,10 +42,10 @@ contract KiteMain is AccessControl {
         uint256 _interestRate,
         address _vaultAddress,
         PaymentInterval _paymentInterval,
-        uint256 _maxDuration
+        uint256 _splitsCount
     ) external {
         require(_interestRate > 0, "Interest rate must be greater than 0");
-        require(_maxDuration > 0, "Max duration must be greater than 0");
+        require(_splitsCount > 0, "Max duration must be greater than 0");
 
         campaignIdCounter++;
         campaigns[campaignIdCounter] = Campaign({
@@ -53,7 +53,7 @@ contract KiteMain is AccessControl {
             vaultAddress: _vaultAddress,
             interestRate: _interestRate,
             paymentInterval: _paymentInterval,
-            maxDuration: _maxDuration
+            splitsCount: _splitsCount
         });
 
         campaignIdsByAddress[msg.sender].push(campaignIdCounter);
@@ -66,7 +66,11 @@ contract KiteMain is AccessControl {
     }
 
     // Function to initiate a trade
-    function initiateTrade(uint256 campaignID, uint256 amount) external {
+    function initiateTrade(
+        uint256 campaignID,
+        uint256 total,
+        uint256 amount
+    ) external {
         uint256 tradeId = tradeCounters[campaignID] + 1;
         require(
             amount >= calculateNextPayment(campaignID, tradeId, amount),
@@ -79,11 +83,11 @@ contract KiteMain is AccessControl {
         KiteVault(vaultAddress).executeTrade(
             campaignID,
             tradeId,
-            amount,
-            campaign.interestRate,
-            campaign.maxDuration,
-            uint256(campaign.paymentInterval)
-        ); //aren't we supposed to pass amount in trade execution?
+            campaign.splitsCount,
+            uint256(campaign.paymentInterval),
+            total,
+            amount
+        );
     }
 
     function calculateNextPayment(
@@ -94,28 +98,18 @@ contract KiteMain is AccessControl {
         Campaign storage campaign = campaigns[campaignID];
 
         // Get the trade details using getTradeDetails
-        (
-            uint256 tradeAmount,
-            uint256 lastInterval,
-            uint256 totalShares,
-            bool splitPaymentsInProgress
-        ) = KiteVault(campaign.vaultAddress).getTradeDetails(
-                campaignID,
-                tradeId
-            );
+        (uint256[] memory amounts, uint256[] memory dueDates) = KiteVault(
+            campaign.vaultAddress
+        ).getSplits(campaignID, tradeId);
 
-        if (tradeAmount == 0) {
-            // The trade doesn't exist yet, it's the initial payment
-            return (campaign.interestRate * amount) / campaign.maxDuration;
+        if (dueDates.length == 0) {
+            return (campaign.interestRate * amount) / campaign.splitsCount;
         }
 
-        require(splitPaymentsInProgress, "Split payments not in progress");
+        require(amounts.length > 0, "No remaining splits to process");
 
-        // Access tradeAmount directly
-        uint256 remainingPayments = campaign.maxDuration /
-            uint256(campaign.paymentInterval);
-        uint256 nextPaymentAmount = (campaign.interestRate * amount) /
-            remainingPayments;
+        uint256 nextPaymentAmount = amounts[0];
+        uint256 nextDueDate = dueDates[0];
 
         return nextPaymentAmount;
     }
