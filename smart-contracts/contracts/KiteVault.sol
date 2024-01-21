@@ -59,18 +59,6 @@ contract KiteVault is
         _deposit(_msgSender(), msg.sender, assets, shares);
     }
 
-    function prev() public view returns (uint256 maxAssets) {
-        maxAssets = maxDeposit(msg.sender);
-        return maxAssets;
-    }
-
-    function withdraw() public returns (uint256) {
-        uint256 maxAssets = maxWithdraw(msg.sender);
-        uint256 shares = previewWithdraw(maxAssets);
-        _withdraw(_msgSender(), msg.sender, msg.sender, maxAssets, shares);
-        return shares;
-    }
-
     // Function to start a trade
     function executeTrade(
         uint256 campaignID,
