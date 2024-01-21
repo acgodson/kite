@@ -18,14 +18,19 @@ import { GiCheckMark } from 'react-icons/gi';
 import { useAccount } from 'wagmi';
 import { ConnectKitButton } from 'connectkit';
 import CreateCampaignModal from '@/components/Modals/CreateModal';
+import { AddBillModal } from '@/components/Modals/Addbill';
 
 
 const Home: React.FC = () => {
   const { address, isConnecting, isDisconnected } = useAccount();
   const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
+  const [isBillModalOpen, setIsBillModalOpen] = useState(false);
 
   const toggleCreateCampaignModal = () => {
     setIsCreateCampaignModalOpen(!isCreateCampaignModalOpen);
+  };
+  const toggleBillModalOpen = () => {
+    setIsBillModalOpen(!isBillModalOpen);
   };
 
 
@@ -84,7 +89,9 @@ const Home: React.FC = () => {
                     <Box>    <Button
                       onClick={toggleCreateCampaignModal}
                     >Add Campaign</Button></Box> <Box w={5} />
-                    <Box>          <Button>New Payment</Button></Box>
+                    <Box>          <Button
+                    onClick={toggleBillModalOpen}
+                    >New Payment</Button></Box>
                   </Center>
 
                 </> :
@@ -117,6 +124,7 @@ const Home: React.FC = () => {
 
 
       <CreateCampaignModal isOpen={isCreateCampaignModalOpen} onClose={toggleCreateCampaignModal} />
+      <AddBillModal isOpen={isBillModalOpen} onClose={toggleBillModalOpen} />
 
     </Box>
   );

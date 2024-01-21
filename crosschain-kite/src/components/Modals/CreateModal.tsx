@@ -27,6 +27,8 @@ import { ethers } from 'ethers';
 import { MetaMaskInpageProvider } from "@metamask/providers";
 import coreFactory from '@/utils/core.json'
 import AnimatedSpinner from '../AnimatedSpinner';
+import { FaCheckCircle } from 'react-icons/fa';
+
 
 declare global {
   interface Window {
@@ -35,7 +37,7 @@ declare global {
 }
 const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const [interestRate, setInterestRate] = useState(3);
-  const [vaultAddress, setVaultAddress] = useState('0x903fE05f49813cA7637f8e35483Bd34cDB241EEF');
+  const [vaultAddress, setVaultAddress] = useState('0x2f35247bF78b64Ed879770a78dF5630a2584946F');
   const [paymentInterval, setPaymentInterval] = useState('0');
   const [splitsCount, setSplitsCount] = useState(2);
   const [loading, setLoading] = useState(false);
@@ -52,7 +54,7 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
       }
       const provider = new ethers.BrowserProvider(ethereum);
       const signer = provider.getSigner();
-      const CoreAddress = "0x6C51C86b3F645D9100f4d7793eAD75f8E955d4C4";
+      const CoreAddress = "0xeFc6B96a9A3Db8B741e85DFFdCb8201Ae97C6380";
 
       const contract = new ethers.Contract(CoreAddress, coreFactory.abi, await signer);
       const tx = await contract.createCampaign(interestRate, vaultAddress, parseInt(paymentInterval), splitsCount);
@@ -73,8 +75,15 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     }
   }
 
+
+  function reset() {
+    setSuccess(false);
+    setLoading(false);
+  }
+
   const handleCreateCampaign = async () => {
     console.log('Creating campaign:', interestRate, vaultAddress, paymentInterval, splitsCount);
+    setLoading(true)
     await submitTransaction();
   };
 
@@ -90,7 +99,7 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
         <ModalHeader>Create Campaign</ModalHeader>
         <ModalCloseButton />
         <ModalBody w='100%' maxW='700px' h='450px'>
-          {!success && !loading && (
+          {!loading && !success && (
             <>
               <FormControl mb={4}>
                 <FormLabel>Interest Rate</FormLabel>
@@ -115,7 +124,7 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                   value={vaultAddress}
                   onChange={(e) => setVaultAddress(e.target.value)}
                 >
-                  <option value="0x903fE05f49813cA7637f8e35483Bd34cDB241EEF">Aave GHO-vault</option>
+                  <option value="0x2f35247bF78b64Ed879770a78dF5630a2584946F">Aave GHO-vault</option>
                   {/* Add other vault options if needed */}
                 </Select>
               </FormControl>
@@ -148,19 +157,36 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
               </FormControl>
             </>
           )}
-          {success && !loading && (
+
+
+          {loading && !success && (
             <>
-              <Center>
+              <Center h="100%">
                 <AnimatedSpinner />
               </Center>
             </>
           )}
+
+          {success && !loading && (
+            <>
+              <Center h="100%">
+                <FaCheckCircle color="green" size={"50px"} />
+              </Center>
+              <br />
+              <Text fontSize={"bold"} textAlign={"center"}>Campaign Added</Text>
+              <Button onClick={reset}>New Campaign</Button>
+            </>
+          )}
         </ModalBody>
         <ModalFooter>
-          <Button colorScheme="teal" mr={3} onClick={handleCreateCampaign}>
-            Create Campaign
-          </Button>
-          <Button onClick={onClose}>Cancel</Button>
+          {!loading && !success && (
+            <>
+              <Button colorScheme="teal" mr={3} onClick={handleCreateCampaign}>
+                Create Campaign
+              </Button>
+              <Button onClick={onClose}>Cancel</Button>
+            </>
+          )}
         </ModalFooter>
       </ModalContent>
     </Modal>

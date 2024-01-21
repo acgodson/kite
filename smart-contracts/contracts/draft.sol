@@ -212,11 +212,7 @@ contract KiteVault is ERC4626, Ownable(msg.sender) {
         } else if (interval == PaymentInterval.Monthly) {
             intervalInSeconds = 30 days; // Assuming a month is 30 days
         }
-
-        // Initialize the due dates array
         dueDates = new uint256[](splitsCount);
-
-        // // Populate the due dates array with calculated dates
         for (uint256 i = 0; i < splitsCount; i++) {
             dueDates[i] = nextDueDate;
             nextDueDate = nextDueDate + intervalInSeconds;
@@ -227,4 +223,7 @@ contract KiteVault is ERC4626, Ownable(msg.sender) {
     function checkBlock() external view returns (uint256) {
         return block.timestamp;
     }
+
+
+    
 }

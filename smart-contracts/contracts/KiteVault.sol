@@ -3,12 +3,22 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 // Import the helper contract
 import "./KiteVaultHelpers.sol";
 
-contract KiteVault is ERC4626, Ownable(msg.sender), KiteVaultHelpers {
+address constant _KITECORE = address(
+    0xeFc6B96a9A3Db8B741e85DFFdCb8201Ae97C6380
+);
+
+contract KiteVault is
+    AccessControl,
+    ERC4626,
+    Ownable(_KITECORE),
+    KiteVaultHelpers
+{
     uint256 public rewardsApplicable;
     address public immutable _owner;
     ERC20 private immutable _asset;
@@ -26,9 +36,19 @@ contract KiteVault is ERC4626, Ownable(msg.sender), KiteVaultHelpers {
         uint256 lastInterval
     );
 
-    constructor(ERC20 asset) ERC4626(asset) ERC20("Kit Tokens", "KIT") {
+    constructor(ERC20 asset) ERC4626(asset) ERC20("Kite Shares", "KITE") {
         _asset = asset;
-        _owner = msg.sender;
+        _owner = _KITECORE;
+    }
+
+    modifier onlyBuyer(uint256 tradeID, address sender) {
+        _checkOnlyBuyer(tradeID, sender);
+        _;
+    }
+
+    modifier onlyCore() {
+        require(msg.sender == _KITECORE, "Caller is not the core address");
+        _;
     }
 
     function deposit(
@@ -59,18 +79,27 @@ contract KiteVault is ERC4626, Ownable(msg.sender), KiteVaultHelpers {
         uint256 interval,
         uint256 total,
         uint256 paymentAmount
-    ) external onlyOwner {
+    ) external onlyCore {
         Trade storage trade = trades[campaignID][tradeId];
         uint256 currentTimestamp = block.timestamp;
 
+        //initialize new trade
         if (trade.total == 0) {
-            initiateTrade(
-                trade,
+            trade.dueDates = initiateDueDates(
                 currentTimestamp,
                 splitsCount,
-                KiteVaultHelpers.PaymentInterval(interval),
-                total
+                KiteVaultHelpers.PaymentInterval(interval)
             );
+            trade.total = total;
+            trade.closed = false;
+            trade.amounts = new uint256[](trade.dueDates.length);
+            uint256 amountPerSplit = total / trade.dueDates.length;
+            for (uint256 i = 0; i < trade.dueDates.length; i++) {
+                trade.amounts[i] = amountPerSplit;
+            }
+            trade.paidDueDates = new bool[](trade.dueDates.length);
+            bytes32 Buyer_ROLE = keccak256(abi.encodePacked(tradeId, "buyer"));
+            _grantRole(Buyer_ROLE, msg.sender);
         }
 
         // Fetch the remaining splits details
@@ -82,7 +111,6 @@ contract KiteVault is ERC4626, Ownable(msg.sender), KiteVaultHelpers {
         uint256 nextPaymentAmount = remainingAmounts[0];
         uint256 nextDueDate = dueDates[0];
 
-        // Check if the provided payment amount is equal or greater than the next payment amount
         require(
             paymentAmount >= nextPaymentAmount,
             "Insufficient amount for the next payment"
@@ -94,7 +122,7 @@ contract KiteVault is ERC4626, Ownable(msg.sender), KiteVaultHelpers {
             if (trade.dueDates[i] == nextDueDate) {
                 trade.paidDueDates[i] = true;
                 trade.settled += nextPaymentAmount;
-                break; // We found the next due date and processed it
+                break;
             }
         }
 
@@ -111,5 +139,17 @@ contract KiteVault is ERC4626, Ownable(msg.sender), KiteVaultHelpers {
     {
         Trade storage trade = trades[_campaignID][_tradeId];
         return super.getRemainingSplits(trade);
+    }
+
+    function _checkOnlyBuyer(uint256 tradeId, address sender) internal view {
+        if (!_isCampaignBuyer(tradeId, sender)) revert("UNAUTHORIZED");
+    }
+
+    function _isCampaignBuyer(
+        uint256 tradeId,
+        address _address
+    ) internal view returns (bool) {
+        bytes32 Buyer_ROLE = keccak256(abi.encodePacked(tradeId, "buyer"));
+        return hasRole(Buyer_ROLE, _address);
     }
 }

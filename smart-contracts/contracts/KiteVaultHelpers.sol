@@ -18,26 +18,52 @@ contract KiteVaultHelpers {
         bool closed;
     }
 
-    function initiateTrade(
-        Trade storage trade,
+    function initiateDueDates(
         uint256 currentTimestamp,
         uint256 splitsCount,
-        PaymentInterval interval,
-        uint256 total
-    ) internal {
+        PaymentInterval interval
+    ) internal pure returns (uint256[] memory dueDates) {
         // Calculate the first due date based on the current timestamp
         uint256 nextDueDate = currentTimestamp;
+
         // Set the interval for subsequent due dates
-        uint256 intervalInSeconds = _getIntervalInSeconds(interval);
-        // Populate the due dates and amounts arrays
-        trade.dueDates = new uint256[](splitsCount);
-        trade.amounts = new uint256[](splitsCount);
-        for (uint256 i = 0; i < splitsCount; i++) {
-            trade.dueDates[i] = nextDueDate;
-            trade.amounts[i] = total / splitsCount;
-            nextDueDate += intervalInSeconds;
+        uint256 intervalInSeconds;
+
+        if (interval == PaymentInterval.Daily) {
+            intervalInSeconds = 1 days;
+        } else if (interval == PaymentInterval.Weekly) {
+            intervalInSeconds = 7 days;
+        } else if (interval == PaymentInterval.Monthly) {
+            intervalInSeconds = 30 days; // Assuming a month is 30 days
         }
+        dueDates = new uint256[](splitsCount);
+        for (uint256 i = 0; i < splitsCount; i++) {
+            dueDates[i] = nextDueDate;
+            nextDueDate = nextDueDate + intervalInSeconds;
+        }
+        return dueDates;
     }
+
+    // function initiateTrade(
+    //     Trade storage trade,
+    //     uint256 currentTimestamp,
+    //     uint256 splitsCount,
+    //     PaymentInterval interval,
+    //     uint256 total
+    // ) internal {
+    //     // Calculate the first due date based on the current timestamp
+    //     uint256 nextDueDate = currentTimestamp;
+    //     // Set the interval for subsequent due dates
+    //     uint256 intervalInSeconds = _getIntervalInSeconds(interval);
+    //     // Populate the due dates and amounts arrays
+    //     trade.dueDates = new uint256[](splitsCount);
+    //     trade.amounts = new uint256[](splitsCount);
+    //     for (uint256 i = 0; i < splitsCount; i++) {
+    //         trade.dueDates[i] = nextDueDate;
+    //         trade.amounts[i] = total / splitsCount;
+    //         nextDueDate += intervalInSeconds;
+    //     }
+    // }
 
     function getRemainingSplits(
         Trade storage trade
@@ -66,13 +92,13 @@ contract KiteVaultHelpers {
     }
 
     function _getIntervalInSeconds(
-        PaymentInterval interval
-    ) private returns (uint256) {
-        if (interval == PaymentInterval.Daily) {
+        uint256 interval
+    ) internal returns (uint256) {
+        if (interval == uint256(PaymentInterval.Daily)) {
             return 1 days;
-        } else if (interval == PaymentInterval.Weekly) {
+        } else if (interval == uint256(PaymentInterval.Weekly)) {
             return 7 days;
-        } else if (interval == PaymentInterval.Monthly) {
+        } else if (interval == uint256(PaymentInterval.Monthly)) {
             return 30 days; // Assuming a month is 30 days
         }
         revert("Invalid payment interval");
