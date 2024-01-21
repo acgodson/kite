@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-};
+export const reactStrictMode = false;
+export const webpack5 = true;
+export function webpack(config) {
+  config.resolve.fallback = {
+    fs: false,
+    net: false,
+    dns: false,
+    child_process: false,
+    tls: false,
+  };
 
-export default nextConfig;
+  return config;
+}
