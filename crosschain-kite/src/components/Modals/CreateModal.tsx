@@ -81,7 +81,8 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
       // Check if the transaction was successful
       if (receipt.status === 1) {
         console.log('Transaction successful!');
-        const transactionHash = receipt.transactionHash;
+        const transactionHash = receipt.hash;
+        console.log(receipt)
         setHash(transactionHash);
         setSuccess(true);
         setLoading(false);

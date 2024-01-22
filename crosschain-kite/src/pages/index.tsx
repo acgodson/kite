@@ -170,14 +170,14 @@ const Home: React.FC = () => {
       color="white" minHeight="100vh">
 
 
-      <Box
+      <Flex
         position={"absolute"}
-        display={"flex"} flexDirection={"column"} alignItems="center"
+        w="100%"
         p={8}
         justifyContent={"flex-end"}
         top={0}>
         <ConnectKitButton />
-      </Box>
+      </Flex>
 
       <Box display={"flex"} flexDirection={"column"} alignItems="center" justifyContent="center">
 
