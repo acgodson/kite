@@ -10,8 +10,12 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "./KiteVaultHelpers.sol";
 
 address constant _KITECORE = address(
-    0xeFc6B96a9A3Db8B741e85DFFdCb8201Ae97C6380
+    0xD2FFf02813Bb65380Ee4A30122cAf5d098469E8d
 );
+
+address constant _GHO = address(0xc4bF5CbDaBE595361438F8c6a187bDc330539c60);
+
+// vault @ 0xE64bC8B0aE893dDE5E2a5268ddde2bb79BE0c80b
 
 contract KiteVault is
     AccessControl,
@@ -19,15 +23,18 @@ contract KiteVault is
     Ownable(_KITECORE),
     KiteVaultHelpers
 {
-    uint256 public rewardsApplicable;
     address public immutable _owner;
     ERC20 private immutable _asset;
 
-    address[] public liquidityProviders;
-
-
-    mapping(uint256 => mapping(uint256 => Trade)) public trades;
+    // all trades
+    mapping(uint256 => Trade) public trades;
+    // filter tradeIDs by campaign
+    mapping(uint256 => uint256[]) public campaignTrades;
+    // filter tradeIDs by depositor
+    mapping(address => uint256[]) public depositorTrades;
+    // Shares of Depositor in GHO
     mapping(address => uint256) public depositorShares;
+    // Shares of  Depositor in USDC
     mapping(address => uint256) public liquidations;
 
     // Event emitted when a trade is executed
@@ -38,8 +45,8 @@ contract KiteVault is
         uint256 lastInterval
     );
 
-    constructor(ERC20 asset) ERC4626(asset) ERC20("Kite Shares", "KITE") {
-        _asset = asset;
+    constructor() ERC4626(ERC20(_GHO)) ERC20("Kite Shares", "KITE") {
+        _asset = ERC20(_GHO);
         _owner = _KITECORE;
     }
 
@@ -53,15 +60,6 @@ contract KiteVault is
         _;
     }
 
-    function deposit(
-        uint256 assets,
-        address receiver
-    ) public override returns (uint256) {
-        uint256 shares = previewDeposit(assets);
-        _deposit(_msgSender(), msg.sender, assets, shares);
-               depositorShares[receiver] += shares;  
-    }
-
     // Function to start a trade
     function executeTrade(
         uint256 campaignID,
@@ -69,13 +67,19 @@ contract KiteVault is
         uint256 splitsCount,
         uint256 interval,
         uint256 total,
-        uint256 paymentAmount
-    ) external onlyCore {
-        Trade storage trade = trades[campaignID][tradeId];
+        uint256 paymentAmount,
+        address sender
+    ) external {
+        Trade storage trade = trades[tradeId];
         uint256 currentTimestamp = block.timestamp;
+
+        uint256 shares = previewDeposit(paymentAmount);
+        _deposit(_msgSender(), _KITECORE, paymentAmount, shares); //kite Core contract holds the shares
+        depositorShares[sender] += shares;
 
         //initialize new trade
         if (trade.total == 0) {
+            //add deposit first
             trade.dueDates = initiateDueDates(
                 currentTimestamp,
                 splitsCount,
@@ -91,6 +95,10 @@ contract KiteVault is
             trade.paidDueDates = new bool[](trade.dueDates.length);
             bytes32 Buyer_ROLE = keccak256(abi.encodePacked(tradeId, "buyer"));
             _grantRole(Buyer_ROLE, msg.sender);
+
+            //update filters
+            campaignTrades[campaignID].push(tradeId);
+            depositorTrades[sender].push(tradeId);
         }
 
         // Fetch the remaining splits details
@@ -128,8 +136,34 @@ contract KiteVault is
         view
         returns (uint256[] memory amounts, uint256[] memory dueDates)
     {
-        Trade storage trade = trades[_campaignID][_tradeId];
+        Trade storage trade = trades[_tradeId];
         return super.getRemainingSplits(trade);
+    }
+
+    function getAllTradesInCampaign(
+        uint256 campaignID
+    ) external view returns (Trade[] memory) {
+        uint256[] memory tradeIds = campaignTrades[campaignID];
+        Trade[] memory _trades = new Trade[](tradeIds.length);
+
+        for (uint256 i = 0; i < tradeIds.length; i++) {
+            _trades[i] = trades[tradeIds[i]];
+        }
+
+        return _trades;
+    }
+
+    function getAllTradesByDepositor(
+        address depositor
+    ) external view returns (Trade[] memory) {
+        uint256[] memory tradeIds = depositorTrades[depositor];
+        Trade[] memory _trades = new Trade[](tradeIds.length);
+
+        for (uint256 i = 0; i < tradeIds.length; i++) {
+            _trades[i] = trades[tradeIds[i]];
+        }
+
+        return _trades;
     }
 
     function _checkOnlyBuyer(uint256 tradeId, address sender) internal view {

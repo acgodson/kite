@@ -93,7 +93,7 @@ contract KiteVaultHelpers {
 
     function _getIntervalInSeconds(
         uint256 interval
-    ) internal returns (uint256) {
+    ) internal pure returns (uint256) {
         if (interval == uint256(PaymentInterval.Daily)) {
             return 1 days;
         } else if (interval == uint256(PaymentInterval.Weekly)) {

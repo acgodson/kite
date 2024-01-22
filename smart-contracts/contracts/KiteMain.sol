@@ -13,6 +13,10 @@ address constant _COLLATERAL = address(
 );
 address constant _ROUTER = address(0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59);
 
+address constant GHO = address(0xc4bF5CbDaBE595361438F8c6a187bDc330539c60);
+
+// 0x5F554bA42Ae9b67D4696060171b0Ea20b6aA9541
+
 contract KiteMain is
     Liquidator(_POOL, _COLLATERAL),
     AutomationCompatibleInterface,
@@ -35,6 +39,7 @@ contract KiteMain is
         uint256 interestRate;
         PaymentInterval paymentInterval;
         uint256 splitsCount;
+        address owner;
     }
 
     struct UpkeepLoans {
@@ -69,7 +74,8 @@ contract KiteMain is
             _interestRate,
             _vaultAddress,
             _paymentInterval,
-            _splitsCount
+            _splitsCount,
+            msg.sender
         );
     }
 
@@ -84,19 +90,23 @@ contract KiteMain is
         Campaign storage campaign = campaigns[campaignID];
         address vaultAddress = campaign.vaultAddress;
 
+        require(IERC20(GHO).approve(vaultAddress, amount), "Approval failed");
+
         require(
-           IERC20(KiteVault(vaultAddress).asset()).transferFrom(msg.sender, address(this), amount),
+            IERC20(GHO).transferFrom(msg.sender, address(this), amount),
             "Transfer failed"
         );
 
         tradeCounters[campaignID] = ++tradeId;
+
         KiteVault(vaultAddress).executeTrade(
             campaignID,
             tradeId,
             campaign.splitsCount,
             uint256(campaign.paymentInterval),
             total,
-            amount
+            amount,
+            msg.sender
         );
     }
 
@@ -114,9 +124,11 @@ contract KiteMain is
         _liquidate(_vaultAsset, userToLiquidate, amountToLiquidate);
     }
 
-    function getCampaignsByAddress(
-        address _userAddress
-    ) public view returns (Campaign[] memory) {
+    function getCampaignsByAddress(address _userAddress)
+        public
+        view
+        returns (Campaign[] memory)
+    {
         uint256[] storage campaignIds = campaignIdsByAddress[_userAddress];
         Campaign[] memory userCampaigns = new Campaign[](campaignIds.length);
 
@@ -146,7 +158,7 @@ contract KiteMain is
         require(amounts.length > 0, "No remaining splits to process");
 
         uint256 nextPaymentAmount = amounts[0];
-        uint256 nextDueDate = dueDates[0];
+        // uint256 nextDueDate = dueDates[0];
 
         return nextPaymentAmount;
     }
@@ -155,7 +167,8 @@ contract KiteMain is
         uint256 _interestRate,
         address _vaultAddress,
         PaymentInterval _paymentInterval,
-        uint256 _splitsCount
+        uint256 _splitsCount,
+        address sender
     ) internal {
         campaignIdCounter++;
         campaigns[campaignIdCounter] = Campaign({
@@ -163,24 +176,27 @@ contract KiteMain is
             vaultAddress: _vaultAddress,
             interestRate: _interestRate,
             paymentInterval: _paymentInterval,
-            splitsCount: _splitsCount
+            splitsCount: _splitsCount,
+            owner: sender
         });
 
-        campaignIdsByAddress[msg.sender].push(campaignIdCounter);
+        campaignIdsByAddress[sender].push(campaignIdCounter);
 
-        emit CampaignCreated(campaignIdCounter, msg.sender);
+        emit CampaignCreated(campaignIdCounter, sender);
     }
 
     //Chainlink Functions starts here
-    function _ccipReceive(
-        Client.Any2EVMMessage memory any2EvmMessage
-    ) internal override {
+    function _ccipReceive(Client.Any2EVMMessage memory any2EvmMessage)
+        internal
+        override
+    {
         //We'll receive a crosschain message to create a new campaign
         (
             uint256 _interestRate,
             address _vaultAddress,
             PaymentInterval _paymentInterval,
-            uint256 _splitsCount
+            uint256 _splitsCount,
+            address _sender
         ) = decodeMessage(any2EvmMessage.data);
 
         require(_interestRate > 0, "Interest rate must be greater than 0");
@@ -190,7 +206,8 @@ contract KiteMain is
             _interestRate,
             _vaultAddress,
             _paymentInterval,
-            _splitsCount
+            _splitsCount,
+            _sender
         );
     }
 
@@ -200,65 +217,65 @@ contract KiteMain is
         external
         view
         override
-        returns (bool upkeepNeeded, bytes memory /* performData */)
+        returns (
+            bool upkeepNeeded,
+            bytes memory /* performData */
+        )
     {
         upkeepNeeded =
             (block.timestamp - lastTimeStamp) > interval &&
             arbitrages.length > 0;
     }
 
-    function performUpkeep(bytes calldata /* performData */) external override {
+    //Perfrom Liquidation
+    function performUpkeep(
+        bytes calldata /* performData */
+    ) external override {
         if (
             (block.timestamp - lastTimeStamp) > interval &&
             arbitrages.length > 0
         ) {
             // Create a new array to store salts that you want to keep
-            bytes32[] memory remainingSalts = new bytes32[](arbitrages.length);
+            // bytes32[] memory remainingLoans = new bytes32[](arbitrages.length);
 
-            for (uint256 i = 0; i < arbitrages.length; i++) {
-                //deploy musicBloc
-                // address musicBloc = _deployMusicBloc(salts[i]);
-                // SoundSphere.InitBlocParam storage params = initBlocParam[
-                //     salts[i]
-                // ];
-                // IMusicBloc(musicBloc).initialize(
-                //     params.creator,
-                //     params.cid,
-                //     address(this), //set soundsphere as owner
-                //     params.seed
-                // );
-                // musicBlocs[musicBlocsCounter] = musicBloc;
-                // emit NewMusicBloc(musicBloc, params.creator);
-                // remainingSalts[i] = salts[i];
-            }
+            // for (uint256 i = 0; i < arbitrages.length; i++) {
+
+            // }
             // salts = new bytes32[](0);
             lastTimeStamp = block.timestamp;
         }
     }
 
-    function decodeMessage(
-        bytes memory data
-    )
+    function decodeMessage(bytes memory data)
         internal
         pure
         returns (
             uint256 interestRate,
             address vaultAddress,
             PaymentInterval paymentInterval,
-            uint256 splitsCount
+            uint256 splitsCount,
+            address owner
         )
     {
         (
             uint256 _interestRate,
             address _vaultAddress,
             uint8 _paymentInterval,
-            uint256 _splitsCount
-        ) = abi.decode(data, (uint256, address, uint8, uint256));
+            uint256 _splitsCount,
+            address _owner
+        ) = abi.decode(data, (uint256, address, uint8, uint256, address));
         interestRate = _interestRate;
         vaultAddress = _vaultAddress;
         paymentInterval = PaymentInterval(_paymentInterval);
         splitsCount = _splitsCount;
+        owner = _owner;
 
-        return (interestRate, vaultAddress, paymentInterval, splitsCount);
+        return (
+            interestRate,
+            vaultAddress,
+            paymentInterval,
+            splitsCount,
+            owner
+        );
     }
 }
