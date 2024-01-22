@@ -25,8 +25,10 @@ contract KiteVault is
 
     address[] public liquidityProviders;
 
-    // Mapping to store trades by campaign ID
+
     mapping(uint256 => mapping(uint256 => Trade)) public trades;
+    mapping(address => uint256) public depositorShares;
+    mapping(address => uint256) public liquidations;
 
     // Event emitted when a trade is executed
     event TradeExecuted(
@@ -57,6 +59,7 @@ contract KiteVault is
     ) public override returns (uint256) {
         uint256 shares = previewDeposit(assets);
         _deposit(_msgSender(), msg.sender, assets, shares);
+               depositorShares[receiver] += shares;  
     }
 
     // Function to start a trade

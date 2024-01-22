@@ -13,6 +13,7 @@ import {
   Center,
   Button,
   Divider,
+  HStack,
 } from '@chakra-ui/react';
 import { GiCheckMark } from 'react-icons/gi';
 import { useAccount } from 'wagmi';
@@ -72,14 +73,47 @@ const Home: React.FC = () => {
 
         {/* Comparing Features */}
         <Stack spacing={6} align="start" mb={12}
-
+          w="100%"
         >
-          <Stack spacing={5} direction={["column", "column", "row"]}>
-            <List border={"1px solid gray"} p={8} borderRadius={"12px"} w="100%">
-              <FeatureListItem icon={<Icon as={GiCheckMark} color={"#06b670"} />} text="Access Controlled Vaults" />
-              <FeatureListItem icon={<Icon as={GiCheckMark} color={"#06b670"} />} text="Earn Offsets from deposits" />
-              <FeatureListItem icon={<Icon as={GiCheckMark} color={"#06b670"} />} text="Automatic Liquidation" />
-            </List>
+          <Stack w="100%" spacing={5} direction={["column", "column", "row"]}>
+            {!address ?
+              <List border={"1px solid gray"} p={8} borderRadius={"12px"} w="100%">
+                <FeatureListItem icon={<Icon as={GiCheckMark} color={"#06b670"} />} text="Access Controlled Vaults" />
+                <FeatureListItem icon={<Icon as={GiCheckMark} color={"#06b670"} />} text="Earn Offsets from deposits" />
+                <FeatureListItem icon={<Icon as={GiCheckMark} color={"#06b670"} />} text="Automatic Liquidation" />
+              </List> :
+              <Box minW="300px" border={"1px solid gray"} p={8} borderRadius={"12px"} w="100%">
+                <Text textAlign={"right"} fontSize={"sm"} fontWeight={"semibold"}>My Balance</Text>
+                <Center>
+                  <Box textAlign={"center"}>
+                    <HStack>
+                      <Box> <Text fontSize={"2xl"} fontWeight={"bold"}>0</Text>
+                      </Box>
+                    </HStack>
+                    <Divider py={2} />
+                    <HStack py={2}>
+                      <Box borderRight={'0.5px solid white'} px={3}>
+                        <Text fontSize={"xs"} color={"#06b670"} fontWeight={"bold"}>Vault</Text>
+                        <Text fontSize={"xs"} fontWeight={"bold"}>0 GHO</Text>
+                      </Box>
+                      <Box borderRight={'0.5px solid white'} px={3}>
+                        <Text fontSize={"xs"} color={"#06b670"} fontWeight={"bold"}>Lqd</Text>
+                        <Text fontSize={"xs"} fontWeight={"bold"}>0 USDC</Text>
+                      </Box>
+                      <Box borderRight={'none'} px={3}>
+                        <Text fontSize={"xs"} color={"#06b670"} fontWeight={"bold"}>Profits</Text>
+                        <Text fontSize={"xs"} fontWeight={"bold"}>0%</Text>
+                      </Box>
+                    </HStack>
+
+                  </Box>
+                </Center>
+
+
+
+              </Box>
+
+            }
 
             <List w="100%" border={"1px solid gray"} p={8} borderRadius={"12px"}>
 
@@ -90,7 +124,7 @@ const Home: React.FC = () => {
                       onClick={toggleCreateCampaignModal}
                     >Add Campaign</Button></Box> <Box w={5} />
                     <Box>          <Button
-                    onClick={toggleBillModalOpen}
+                      onClick={toggleBillModalOpen}
                     >New Payment</Button></Box>
                   </Center>
 
