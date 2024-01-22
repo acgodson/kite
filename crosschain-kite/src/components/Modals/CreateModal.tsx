@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -22,12 +22,16 @@ import {
   InputGroup,
   InputLeftElement,
   Center,
+  Link,
+  Icon
 } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import { MetaMaskInpageProvider } from "@metamask/providers";
 import coreFactory from '@/utils/core.json'
 import AnimatedSpinner from '../AnimatedSpinner';
 import { FaCheckCircle } from 'react-icons/fa';
+import { useNetwork } from 'wagmi'
+import { FiExternalLink } from 'react-icons/fi';
 
 
 declare global {
@@ -35,26 +39,40 @@ declare global {
     ethereum?: MetaMaskInpageProvider
   }
 }
+
+interface ExternalLinkProps {
+  url: string;
+}
+
+
+
 const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const [interestRate, setInterestRate] = useState(3);
-  const [vaultAddress, setVaultAddress] = useState('0x2f35247bF78b64Ed879770a78dF5630a2584946F');
+  const [vaultAddress, setVaultAddress] = useState('0x8821A0696597554a4E58D0773776DCEA9E12c649');
   const [paymentInterval, setPaymentInterval] = useState('0');
   const [splitsCount, setSplitsCount] = useState(2);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [hash, setHash] = useState("")
+  const { chain } = useNetwork();
+
+  const openExternalLink = () => {
+    const url = chain?.name ? `https://ccip.chain.link/msg/${hash}` : "";
+    window.open(url, '_blank');
+  };
 
 
   async function submitTransaction(
   ) {
     try {
       const { ethereum } = window;
-      if (!ethereum) {
+      if (!ethereum || !chain) {
         //no web3 extension
         return;
       }
       const provider = new ethers.BrowserProvider(ethereum);
       const signer = provider.getSigner();
-      const CoreAddress = "0xeFc6B96a9A3Db8B741e85DFFdCb8201Ae97C6380";
+      const CoreAddress = chain.name === 'Sepolia' ? "0xdAc9b8D2e3698f247CAad793e2227461d6AE7D1b" : "0x2385F57Aa8044795c46dbc8aD55c83C31db5BB49"; //sepolia or Avalanche
 
       const contract = new ethers.Contract(CoreAddress, coreFactory.abi, await signer);
       const tx = await contract.createCampaign(interestRate, vaultAddress, parseInt(paymentInterval), splitsCount);
@@ -63,6 +81,8 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
       // Check if the transaction was successful
       if (receipt.status === 1) {
         console.log('Transaction successful!');
+        const transactionHash = receipt.transactionHash;
+        setHash(transactionHash);
         setSuccess(true);
         setLoading(false);
       } else {
@@ -82,6 +102,10 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
   }
 
   const handleCreateCampaign = async () => {
+    if (!chain) {
+      alert("network problem")
+      return;
+    }
     console.log('Creating campaign:', interestRate, vaultAddress, paymentInterval, splitsCount);
     setLoading(true)
     await submitTransaction();
@@ -91,6 +115,11 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     const newSplitsCount = parseInt(value);
     setSplitsCount(newSplitsCount);
   };
+
+  useEffect(() => {
+    console.log('current chain', chain?.name);
+  }, [chain])
+
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -124,7 +153,7 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                   value={vaultAddress}
                   onChange={(e) => setVaultAddress(e.target.value)}
                 >
-                  <option value="0x2f35247bF78b64Ed879770a78dF5630a2584946F">Aave GHO-vault</option>
+                  <option value="0x8821A0696597554a4E58D0773776DCEA9E12c649">Aave GHO-vault</option>
                   {/* Add other vault options if needed */}
                 </Select>
               </FormControl>
@@ -168,14 +197,22 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
           )}
 
           {success && !loading && (
-            <>
+            <Box w="100%">
               <Center h="100%">
                 <FaCheckCircle color="green" size={"50px"} />
               </Center>
               <br />
-              <Text fontSize={"bold"} textAlign={"center"}>Campaign Added</Text>
-              <Button onClick={reset}>New Campaign</Button>
-            </>
+              <Text fontSize={"bold"} textAlign={"center"}>Campaign Created</Text>
+              <Link
+                justifyContent={"center"}
+                color="blue" onClick={openExternalLink} display="flex" alignItems="center">
+                View on
+                {chain?.name === "Sepolia" ? " Explorer" : " CCIP Explorer"}
+                <Icon as={FiExternalLink} ml={1} />
+              </Link>
+              <br />
+              <Button onClick={reset}>Create Another Campaign</Button>
+            </Box>
           )}
         </ModalBody>
         <ModalFooter>

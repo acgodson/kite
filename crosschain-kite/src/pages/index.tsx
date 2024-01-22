@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChakraProvider,
   Box,
@@ -16,16 +16,34 @@ import {
   HStack,
 } from '@chakra-ui/react';
 import { GiCheckMark } from 'react-icons/gi';
-import { useAccount } from 'wagmi';
+import { useAccount, useNetwork } from 'wagmi';
 import { ConnectKitButton } from 'connectkit';
 import CreateCampaignModal from '@/components/Modals/CreateModal';
 import { AddBillModal } from '@/components/Modals/Addbill';
+import { ethers } from 'ethers';
+import vaultFactory from '@/utils/vault.json'
+import { FaAddressBook } from 'react-icons/fa';
+import { MetaMaskInpageProvider } from '@metamask/providers';
+import TradeList from '@/components/TradeList';
 
+
+
+declare global {
+  interface Window {
+    ethereum?: MetaMaskInpageProvider
+  }
+}
 
 const Home: React.FC = () => {
   const { address, isConnecting, isDisconnected } = useAccount();
   const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
+  const [myTrades, setAllTrades] = useState<any[] | null>(null);
+  const [shares, setShares] = useState<number | null>(null);
+  const [lqds, setLqds] = useState<number | null>(null);
+  const { chain } = useNetwork()
+
+
 
   const toggleCreateCampaignModal = () => {
     setIsCreateCampaignModalOpen(!isCreateCampaignModalOpen);
@@ -33,6 +51,112 @@ const Home: React.FC = () => {
   const toggleBillModalOpen = () => {
     setIsBillModalOpen(!isBillModalOpen);
   };
+
+  function TimestampsToDateStrings(timestamps: any[]): string[] {
+    return timestamps.map(timestamp => {
+      const date = new Date(Number(timestamp) * 1000); // Convert timestamp to milliseconds
+      return date.toDateString(); // Convert date to string
+    });
+  }
+
+  function BigAmountsAmounts(amounts: any[]): number[] {
+    return amounts.map(amount => {
+      const value = Number(amount); // Convert timestamp to milliseconds
+      return value; // Convert date to string
+    });
+  }
+
+
+  const getTrades = async () => {
+    if (!address || chain?.name !== 'Sepolia') {
+      return
+    }
+    try {
+      const { ethereum } = window;
+
+      if (!ethereum && chain?.name !== 'Sepolia') {
+        //no web3 extension 
+        return;
+      }
+      const provider = new ethers.BrowserProvider(ethereum!);
+      const signer = provider.getSigner();
+      const vaultAddress = "0x8821A0696597554a4E58D0773776DCEA9E12c649";
+
+      const contract = new ethers.Contract(vaultAddress, vaultFactory.abi, await signer);
+      const tradeResult = await contract.getAllTradesByDepositor(address);
+      const trades = await Promise.all(
+        tradeResult.map(async (trade: any) => {
+          return {
+            total: Number(trade.total),
+            settled: Number(trade.settled),
+            dates: TimestampsToDateStrings(trade.dueDates),
+            splits: BigAmountsAmounts(trade.amounts),
+            settledDates: Object.values(trade.paidDueDates),
+            paymentClosed: trade.closed
+          };
+        })
+      );
+
+      return trades;
+    } catch (error) {
+      console.error('Error fetching trades:', error);
+      return [];
+    }
+  };
+
+
+  const getBalance = async () => {
+    if (!address || chain?.name !== 'Sepolia') {
+      return
+    }
+    try {
+      const { ethereum } = window;
+
+      if (!ethereum && chain?.name !== 'Sepolia') {
+        //no web3 extension 
+        return;
+      }
+      const provider = new ethers.BrowserProvider(ethereum!);
+      const signer = provider.getSigner();
+      const vaultAddress = "0x8821A0696597554a4E58D0773776DCEA9E12c649";
+
+      const contract = new ethers.Contract(vaultAddress, vaultFactory.abi, await signer);
+      const shares = await contract.depositorShares(address);
+      const lqds = await contract.liquidations(address)
+      console.log(lqds);
+      setShares(Number(shares));
+      setLqds(Number(lqds));
+      return;
+
+    } catch (error) {
+      console.error('Error fetching trades:', error);
+      return [];
+    }
+  };
+
+
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      const trades = await getTrades();
+      console.log(trades)
+      if (trades) {
+        setAllTrades(trades as any);
+      }
+    };
+
+    if (!myTrades) {
+      fetchCampaigns();
+    }
+
+  }); // Run only once on component mount
+
+
+  useEffect(() => {
+    if (address && chain?.name === 'Sepolia' && !shares) {
+      getBalance();
+    }
+  })
+
 
 
 
@@ -46,14 +170,16 @@ const Home: React.FC = () => {
       color="white" minHeight="100vh">
 
 
-      <Flex position={"absolute"} w="100%"
+      <Box
+        position={"absolute"}
+        display={"flex"} flexDirection={"column"} alignItems="center"
         p={8}
         justifyContent={"flex-end"}
         top={0}>
         <ConnectKitButton />
-      </Flex>
+      </Box>
 
-      <Flex direction="column" align="center" justify="center">
+      <Box display={"flex"} flexDirection={"column"} alignItems="center" justifyContent="center">
 
 
         <Image
@@ -62,14 +188,13 @@ const Home: React.FC = () => {
           w="auto"
         />
 
-
-        <Text my={4} color="#06b670">
+        <Box my={4} color="#06b670">
           <span style={{
             color: "#c5ff48"
           }}>
             Buy Now Pay Later
           </span> with Aave Integration.
-        </Text>
+        </Box>
 
         {/* Comparing Features */}
         <Stack spacing={6} align="start" mb={12}
@@ -87,21 +212,21 @@ const Home: React.FC = () => {
                 <Center>
                   <Box textAlign={"center"}>
                     <HStack>
-                      <Box> <Text fontSize={"2xl"} fontWeight={"bold"}>0</Text>
+                      <Box> <Text fontSize={"2xl"} fontWeight={"bold"}>${shares ? lqds! + shares : 0}</Text>
                       </Box>
                     </HStack>
                     <Divider py={2} />
                     <HStack py={2}>
                       <Box borderRight={'0.5px solid white'} px={3}>
                         <Text fontSize={"xs"} color={"#06b670"} fontWeight={"bold"}>Vault</Text>
-                        <Text fontSize={"xs"} fontWeight={"bold"}>0 GHO</Text>
+                        <Text fontSize={"xs"} fontWeight={"bold"}>{shares} GHO</Text>
                       </Box>
                       <Box borderRight={'0.5px solid white'} px={3}>
                         <Text fontSize={"xs"} color={"#06b670"} fontWeight={"bold"}>Lqd</Text>
-                        <Text fontSize={"xs"} fontWeight={"bold"}>0 USDC</Text>
+                        <Text fontSize={"xs"} fontWeight={"bold"}>{lqds} USDC</Text>
                       </Box>
                       <Box borderRight={'none'} px={3}>
-                        <Text fontSize={"xs"} color={"#06b670"} fontWeight={"bold"}>Profits</Text>
+                        <Text fontSize={"xs"} color={"#06b670"} fontWeight={"bold"}>Swaps</Text>
                         <Text fontSize={"xs"} fontWeight={"bold"}>0%</Text>
                       </Box>
                     </HStack>
@@ -135,8 +260,8 @@ const Home: React.FC = () => {
                       color="linear(to bottom, black, #111e1d)"
                       fontWeight={"black"}
                       fontSize={'xl'} py={3}>Pay in Kite Installment</Text>
-                    <ConnectKitButton />
-
+                    <Box>     <ConnectKitButton />
+                    </Box>
                   </Box>
                 </Center>
 
@@ -153,8 +278,10 @@ const Home: React.FC = () => {
           <Text fontSize={"xl"} fontWeight={"semi-bold"} color={"whiteAlpha.500"}> In Progress</Text>
           < Divider />
 
+          {myTrades && myTrades?.length > 0 && <TradeList trades={myTrades} />}
+
         </Stack>
-      </Flex>
+      </Box>
 
 
       <CreateCampaignModal isOpen={isCreateCampaignModalOpen} onClose={toggleCreateCampaignModal} />

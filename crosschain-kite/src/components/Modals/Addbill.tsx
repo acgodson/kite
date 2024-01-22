@@ -14,12 +14,13 @@ import {
     Text,
     List,
     ListItem,
+    Box,
 } from '@chakra-ui/react';
 import { MetaMaskInpageProvider } from '@metamask/providers';
 import { ethers } from 'ethers';
 import coreFactory from '@/utils/core.json';
 import GHOFactory from '@/utils/GHOToken.json';
-import { useAccount } from 'wagmi';
+import { useAccount, useNetwork } from 'wagmi';
 import AnimatedSpinner from '../AnimatedSpinner';
 import { FaCheckCircle } from 'react-icons/fa';
 import { SiToptal } from 'react-icons/si';
@@ -44,9 +45,10 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     const [myCampaigns, setMyCampaigns] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const { chain } = useNetwork()
 
     const getMyCampaigns = async () => {
-        if (!address) {
+        if (!address || chain?.name !== 'Sepolia') {
             return
         }
         try {
@@ -57,10 +59,10 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
             }
             const provider = new ethers.BrowserProvider(ethereum);
             const signer = provider.getSigner();
-            const CoreAddress = "0xeFc6B96a9A3Db8B741e85DFFdCb8201Ae97C6380";
+            const CoreAddress = "0xdAc9b8D2e3698f247CAad793e2227461d6AE7D1b";
 
             const contract = new ethers.Contract(CoreAddress, coreFactory.abi, await signer);
-            const campaignResult = await contract.getCampaignsByAddress(address);
+            const campaignResult = await contract.getCampaignsByAddress("0xf2750684eB187fF9f82e2F980f6233707eF5768C");
             const campaigns = await Promise.all(
                 campaignResult.map(async (campaignId: any) => {
                     return {
@@ -83,11 +85,18 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     useEffect(() => {
         const fetchCampaigns = async () => {
             const campaigns = await getMyCampaigns();
+            if (!campaigns) {
+                setMyCampaigns([])
+                return
+            }
             setMyCampaigns(campaigns as any);
         };
 
-        fetchCampaigns();
-    }, []); // Run only once on component mount
+        if (myCampaigns.length < 1) {
+            fetchCampaigns();
+        }
+
+    }, [myCampaigns]); // Run only once on component mount
 
 
     // Sample campaigns (replace with your data)
@@ -113,7 +122,7 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
 
             const provider = new ethers.BrowserProvider(ethereum);
             const signer = provider.getSigner();
-            const CoreAddress = "0xeFc6B96a9A3Db8B741e85DFFdCb8201Ae97C6380";
+            const CoreAddress = "0xdAc9b8D2e3698f247CAad793e2227461d6AE7D1b";
             const GHOTokenAddress = "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60";
 
 
@@ -124,10 +133,10 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
             // Check the current allowance
             const allowance = await ghoTokenContract.allowance(address, CoreAddress);
 
-                // Not enough allowance, need to approve
-                const approveTx = await ghoTokenContract.approve(CoreAddress, ethers.parseUnits(total.toString(), 'ether'));
-                await approveTx.wait();
-  
+            // Not enough allowance, need to approve
+            const approveTx = await ghoTokenContract.approve(CoreAddress, ethers.parseUnits(total.toString(), 'ether'));
+            await approveTx.wait();
+
             const tx = await coreContract.initiateTrade(
                 selectedCampaign.id,
                 total,
@@ -186,16 +195,36 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                         <Button onClick={handleSearch}>Search</Button>
                     </VStack>
                     <List mt={4} spacing={4}>
-                        {myCampaigns.length > 0 && myCampaigns.map((campaign) => (
-                            <ListItem key={campaign.id}>
+                        {myCampaigns && myCampaigns.length > 0 && myCampaigns.map((campaign) => (
+                            <ListItem key={campaign.id} border={"0.4px solid #3182ce"}
+                                px={3}
+                                py={4}
+                            >
                                 <HStack spacing={4} justify="space-between">
                                     <VStack align="start">
                                         <HStack fontSize='xs'>
-                                            <Text>Campaign: {campaign.id}</Text>
-                                            <Text>Interest: {campaign.interestRate}%</Text>
+                                            <Box textAlign={"center"}><span style={{
+                                                fontWeight: "bold"
+                                            }}>Campaign ID:</span> <br /> {campaign.id}</Box>
+                                            <Box textAlign={"center"}>
+                                                <span style={{
+                                                    fontWeight: "bold"
+                                                }}>
+                                                    Interest:
+                                                </span>
+                                                <br /> {campaign.interestRate}%</Box>
 
-                                            <Text>Duration: {campaign.paymentInterval}</Text>
-                                            <Text>max: {campaign.splitsCount} times</Text>
+                                            <Box textAlign={"center"}> <span style={{
+                                                fontWeight: "bold"
+                                            }}>
+                                                Interval:
+                                            </span> <br />{campaign.paymentInterval}</Box>
+                                            <Box textAlign={"center"}> <span style={{
+                                                fontWeight: "bold"
+                                            }}>
+                                                Max Duration:
+                                            </span>
+                                                <br /> {campaign.splitsCount * parseInt(campaign.paymentInterval.split(' ')[0])} days</Box>
 
                                         </HStack>
                                         {/* Add other properties as needed */}
@@ -203,13 +232,14 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                                     </VStack>
                                     <HStack>
                                         <Input w='100px'
-                                            placeholder="Amount"
+                                            fontSize={"xs"}
+                                            placeholder="Total Bill"
                                             type="number"
                                             onChange={(e) =>
                                                 setSelectedCampaign({ ...campaign, amount: parseInt(e.target.value) })
                                             }
                                         />
-                                        <Button onClick={() => handlePay(campaign)}>Pay</Button>
+                                        <Button colorScheme='blue' onClick={() => handlePay(campaign)}>Start</Button>
                                     </HStack>
                                 </HStack>
                             </ListItem>
