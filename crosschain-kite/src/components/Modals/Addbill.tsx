@@ -32,17 +32,12 @@ declare global {
     }
 }
 
-interface Campaign {
-    id: number;
-    interest: number;
-    amount: string; // Add the 'amount' property here
-}
 
 export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
     const { address, isConnecting, isDisconnected } = useAccount();
-    const [myCampaigns, setMyCampaigns] = useState<any[]>([]);
+    const [myCampaigns, setMyCampaigns] = useState<any[] | any>(null);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const { chain } = useNetwork()
@@ -62,7 +57,11 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
             const CoreAddress = "0xdAc9b8D2e3698f247CAad793e2227461d6AE7D1b";
 
             const contract = new ethers.Contract(CoreAddress, coreFactory.abi, await signer);
-            const campaignResult = await contract.getCampaignsByAddress("0xf2750684eB187fF9f82e2F980f6233707eF5768C");
+            const campaignResult = await contract.getCampaignsByAddress(address);
+
+
+            console.log(campaignResult);
+
             const campaigns = await Promise.all(
                 campaignResult.map(async (campaignId: any) => {
                     return {
@@ -71,9 +70,13 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                         interestRate: Number(campaignId.interestRate),
                         paymentInterval: Number(campaignId.paymentInterval) == 0 ? "daily" : Number(campaignId.paymentInterval) == 2 ? "30 days" : "7 days",
                         splitsCount: Number(campaignId.splitsCount),
+                        owner: campaignId.owner,
                     };
+
+                    // return null
                 })
             );
+            console.log(campaigns)
             return campaigns;
         } catch (error) {
             console.error('Error fetching campaigns:', error);
@@ -92,18 +95,20 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
             setMyCampaigns(campaigns as any);
         };
 
-        if (myCampaigns.length < 1) {
+        if (!myCampaigns) {
             fetchCampaigns();
         }
 
     }, [myCampaigns]); // Run only once on component mount
 
 
-    // Sample campaigns (replace with your data)
-    const sampleCampaigns: Campaign[] = [
-        { id: 1, interest: 5, amount: 'Value 1' },
-        { id: 2, interest: 3, amount: 'Value 2' },
-    ];
+    useEffect(() => {
+        if (!isOpen) {
+            setMyCampaigns(null);
+        }
+    }, [null])
+
+
 
     const handleSearch = () => {
         // Implement search logic here based on searchQuery
@@ -159,7 +164,7 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
         }
     }
 
-    const handlePay = (campaign: Campaign) => {
+    const handlePay = (campaign: any) => {
         // Implement logic to initiate trade for the selected campaign
         // You can use this function to trigger the trade based on the selectedCampaign state
         console.log('Initiating trade for campaign:', campaign);
@@ -194,8 +199,9 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                         />
                         <Button onClick={handleSearch}>Search</Button>
                     </VStack>
+
                     <List mt={4} spacing={4}>
-                        {myCampaigns && myCampaigns.length > 0 && myCampaigns.map((campaign) => (
+                        {myCampaigns && myCampaigns.length > 0 && myCampaigns.map((campaign: any) => (
                             <ListItem key={campaign.id} border={"0.4px solid #3182ce"}
                                 px={3}
                                 py={4}
@@ -224,7 +230,11 @@ export const AddBillModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                                             }}>
                                                 Max Duration:
                                             </span>
-                                                <br /> {campaign.splitsCount * parseInt(campaign.paymentInterval.split(' ')[0])} days</Box>
+                                                <br /> {campaign.paymentInterval === "daily" ?
+                                                    1 * campaign.splitsCount
+                                                    : campaign.splitsCount * parseInt(campaign.paymentInterval.split(' ')[0])
+
+                                                } days </Box>
 
                                         </HStack>
                                         {/* Add other properties as needed */}

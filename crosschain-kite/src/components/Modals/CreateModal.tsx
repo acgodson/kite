@@ -75,6 +75,10 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
       const CoreAddress = chain.name === 'Sepolia' ? "0xdAc9b8D2e3698f247CAad793e2227461d6AE7D1b" : "0x2385F57Aa8044795c46dbc8aD55c83C31db5BB49"; //sepolia or Avalanche
 
       const contract = new ethers.Contract(CoreAddress, coreFactory.abi, await signer);
+
+      console.log(vaultAddress);
+      // return
+
       const tx = await contract.createCampaign(interestRate, vaultAddress, parseInt(paymentInterval), splitsCount);
       const receipt = await tx.wait();
 
