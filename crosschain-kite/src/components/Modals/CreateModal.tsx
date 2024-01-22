@@ -57,7 +57,7 @@ const CreateCampaignModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
   const { chain } = useNetwork();
 
   const openExternalLink = () => {
-    const url = chain?.name ? `https://ccip.chain.link/msg/${hash}` : "";
+    const url = chain?.name !== "Sepolia" ? `https://ccip.chain.link/msg/${hash}` : `https://sepolia.etherscan.io/tx/${hash}`;
     window.open(url, '_blank');
   };
 
