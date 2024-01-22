@@ -1014,6 +1014,25 @@
 			{
 				"inputs": [
 					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "liquidityProviders",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
 						"internalType": "address",
 						"name": "",
 						"type": "address"
@@ -1466,6 +1485,19 @@
 				],
 				"stateMutability": "nonpayable",
 				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "withdrawForLiquidation",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
 			}
 		],
 		"devdoc": {
@@ -1863,11 +1895,11 @@
 			]
 		},
 		"KiteVault.sol": {
-			"keccak256": "0x320b5f7011055a5a9ad21dadd91d05036c535b4a66362a1dfc4540ed8d40d20e",
+			"keccak256": "0x5061cd6b7b9f9c356c557ca9e8bf4d71dbde8623dbd2ec975c4ae8a775d9aba0",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://dfea988c420f48fe74f46ab4bca8c5d2330e991ef185b3488dd680acd95e9ff6",
-				"dweb:/ipfs/QmQAazREDBZWnGYjwBnkPzxXypJH4FD9zrSAkZ18jhrLc3"
+				"bzz-raw://cc17b95822c3a3e02646e89868399eeb15167938f4b8117003ae9bf3d4591494",
+				"dweb:/ipfs/Qmdu6Qy5DPyCYqyeDSuhCQjiViEFx9V9fEThPy6DwNM1Kp"
 			]
 		},
 		"KiteVaultHelpers.sol": {

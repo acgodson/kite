@@ -15,7 +15,7 @@ address constant _KITECORE = address(
 
 address constant _GHO = address(0xc4bF5CbDaBE595361438F8c6a187bDc330539c60);
 
-// vault @ 0xE64bC8B0aE893dDE5E2a5268ddde2bb79BE0c80b
+// vault @ 0xEFe1C49cce67301C7C3c290e168aCD7a8c54Fb1A
 
 contract KiteVault is
     AccessControl,
@@ -25,6 +25,8 @@ contract KiteVault is
 {
     address public immutable _owner;
     ERC20 private immutable _asset;
+
+    address[] public liquidityProviders;
 
     // all trades
     mapping(uint256 => Trade) public trades;
@@ -47,7 +49,7 @@ contract KiteVault is
 
     constructor() ERC4626(ERC20(_GHO)) ERC20("Kite Shares", "KITE") {
         _asset = ERC20(_GHO);
-        _owner = _KITECORE;
+        _owner = msg.sender;
     }
 
     modifier onlyBuyer(uint256 tradeID, address sender) {
@@ -75,6 +77,7 @@ contract KiteVault is
 
         uint256 shares = previewDeposit(paymentAmount);
         _deposit(_msgSender(), _KITECORE, paymentAmount, shares); //kite Core contract holds the shares
+        liquidityProviders.push(sender);
         depositorShares[sender] += shares;
 
         //initialize new trade
@@ -126,6 +129,40 @@ contract KiteVault is
         }
 
         emit TradeExecuted(campaignID, tradeId, trade.total, trade.settled);
+    }
+
+    function withdrawForLiquidation(uint256 amount) external {
+        require(amount > 0, "Invalid withdrawal amount");
+        // Get the total shares and check if there are shares to distribute
+        uint256 totalShares = totalSupply();
+        require(
+            totalShares >= 0,
+            "Insufficient shares available for distribution"
+        );
+
+        // Calculate the total shares available withdraw
+        uint256 totalSharesToWithdraw = 0;
+
+        for (uint256 i = 0; i < liquidityProviders.length; i++) {
+            address depositor = liquidityProviders[i];
+            uint256 depositorShare = depositorShares[depositor];
+            // Calculate the proportion of shares to withdraw for the current depositor
+            uint256 sharesToWithdraw = (amount * depositorShare) / totalShares;
+            // Update the depositor's shares
+            depositorShares[depositor] -= sharesToWithdraw;
+            // Update the depositor's liquidation shares
+            liquidations[depositor] += sharesToWithdraw;
+        }
+        uint256 shares = previewWithdraw(amount);
+
+        // Transfer the corresponding amount of assets to the receiver
+        _withdraw(
+            msg.sender,
+            msg.sender,
+            _owner,
+            totalSharesToWithdraw,
+            shares
+        );
     }
 
     function getSplits(

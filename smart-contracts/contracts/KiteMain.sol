@@ -22,7 +22,6 @@ contract KiteMain is
     AutomationCompatibleInterface,
     CCIPReceiver
 {
-    address public admin;
     uint256 public campaignIdCounter;
     uint256 public immutable interval;
     uint256 public lastTimeStamp;
@@ -56,8 +55,7 @@ contract KiteMain is
     event CampaignCreated(uint256 campaignId, address indexed campaignAddress);
 
     constructor() CCIPReceiver(_ROUTER) {
-        interval = 60;
-        admin = msg.sender;
+        interval = 60; //check for liquidation opportunity every 60secs
     }
 
     //Anybody can create a campaign
