@@ -9,13 +9,12 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 // Import the helper contract
 import "./KiteVaultHelpers.sol";
 
+//address of Deployed Kite Main
 address constant _KITECORE = address(
-    0xD2FFf02813Bb65380Ee4A30122cAf5d098469E8d
+    0x4Cf1fB6A153156c8FfE869390c5b1DEE71fEe65D
 );
-
+//address of Vault Asset / GHO
 address constant _GHO = address(0xc4bF5CbDaBE595361438F8c6a187bDc330539c60);
-
-// vault @ 0xEFe1C49cce67301C7C3c290e168aCD7a8c54Fb1A
 
 contract KiteVault is
     AccessControl,
@@ -62,7 +61,7 @@ contract KiteVault is
         _;
     }
 
-    // Function to start a trade
+    // Starts or Continues payments for a trade
     function executeTrade(
         uint256 campaignID,
         uint256 tradeId,
@@ -71,12 +70,12 @@ contract KiteVault is
         uint256 total,
         uint256 paymentAmount,
         address sender
-    ) external {
+    ) external onlyCore {
         Trade storage trade = trades[tradeId];
         uint256 currentTimestamp = block.timestamp;
 
         uint256 shares = previewDeposit(paymentAmount);
-        _deposit(_msgSender(), _KITECORE, paymentAmount, shares); //kite Core contract holds the shares
+        _deposit(_msgSender(), msg.sender, paymentAmount, shares); //kite Core contract holds the shares
         liquidityProviders.push(sender);
         depositorShares[sender] += shares;
 
@@ -131,7 +130,8 @@ contract KiteVault is
         emit TradeExecuted(campaignID, tradeId, trade.total, trade.settled);
     }
 
-    function withdrawForLiquidation(uint256 amount) external {
+    //Kite withdraws GHO for liquidating USDC collaterals on Aave
+    function withdrawForLiquidation(uint256 amount) external onlyCore {
         require(amount > 0, "Invalid withdrawal amount");
         // Get the total shares and check if there are shares to distribute
         uint256 totalShares = totalSupply();
@@ -165,18 +165,16 @@ contract KiteVault is
         );
     }
 
-    function getSplits(
-        uint256 _campaignID,
-        uint256 _tradeId
-    )
-        external
-        view
-        returns (uint256[] memory amounts, uint256[] memory dueDates)
-    {
-        Trade storage trade = trades[_tradeId];
-        return super.getRemainingSplits(trade);
-    }
+    //Buyer pays Merchant from liquidation balance (USDC) on due date
+    function payMerchant() external onlyCore {}
 
+    //Refund buyer of remaining GHO after payment cycle
+    function refund(
+        uint256 tradeID,
+        address sender
+    ) external onlyCore onlyBuyer(tradeID, sender) {}
+
+    //Retrieve all trades in a Campaign
     function getAllTradesInCampaign(
         uint256 campaignID
     ) external view returns (Trade[] memory) {
@@ -190,6 +188,7 @@ contract KiteVault is
         return _trades;
     }
 
+    // Retrieve all trades by a depositor
     function getAllTradesByDepositor(
         address depositor
     ) external view returns (Trade[] memory) {

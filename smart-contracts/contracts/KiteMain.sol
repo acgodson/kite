@@ -7,6 +7,8 @@ import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 import "./KiteVault.sol";
 import "./Liquidator.sol";
 
+//HardCoded Contract Addresses. This Contract is a show of Kite and should not be used in Production
+
 address constant _POOL = address(0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951);
 address constant _COLLATERAL = address(
     0x88233eEc48594421FA925D614b3a94A2dDC19a08
@@ -22,6 +24,7 @@ contract KiteMain is
     AutomationCompatibleInterface,
     CCIPReceiver
 {
+    uint256 public tradeCounters;
     uint256 public campaignIdCounter;
     uint256 public immutable interval;
     uint256 public lastTimeStamp;
@@ -48,7 +51,6 @@ contract KiteMain is
 
     UpkeepLoans[] public arbitrages; //unhealth loans to liquidate
 
-    mapping(uint256 => uint256) private tradeCounters;
     mapping(address => uint256[]) public campaignIdsByAddress;
     mapping(uint256 => Campaign) public campaigns;
 
@@ -58,7 +60,7 @@ contract KiteMain is
         interval = 60; //check for liquidation opportunity every 60secs
     }
 
-    //Anybody can create a campaign
+    //Create a campaign that defines trades/payment Cycle conditions.
     function createCampaign(
         uint256 _interestRate,
         address _vaultAddress,
@@ -77,13 +79,13 @@ contract KiteMain is
         );
     }
 
-    // Function to initiate a trade
+    //Start installment payments from a cycle
     function initiateTrade(
         uint256 campaignID,
         uint256 total,
         uint256 amount
     ) external {
-        uint256 tradeId = tradeCounters[campaignID] + 1;
+        uint256 tradeId = ++tradeCounters;
 
         Campaign storage campaign = campaigns[campaignID];
         address vaultAddress = campaign.vaultAddress;
@@ -94,8 +96,6 @@ contract KiteMain is
             IERC20(GHO).transferFrom(msg.sender, address(this), amount),
             "Transfer failed"
         );
-
-        tradeCounters[campaignID] = ++tradeId;
 
         KiteVault(vaultAddress).executeTrade(
             campaignID,
@@ -108,7 +108,8 @@ contract KiteMain is
         );
     }
 
-    function liquidate(
+    //Perform Liquidity by retrieving GHO from Kite Vault
+    function performLiquidation(
         uint256 campaignID,
         uint256 tradeID,
         address userToLiquidate,
@@ -116,17 +117,17 @@ contract KiteMain is
     ) external {
         Campaign storage campaign = campaigns[campaignID];
         address vaultAddress = campaign.vaultAddress;
-        address _vaultAsset = KiteVault(vaultAddress).asset();
-
-        //logic to quickly burn and retrieve borrowed Asset from the  vault
-        _liquidate(_vaultAsset, userToLiquidate, amountToLiquidate);
+        KiteVault vault = KiteVault(vaultAddress);
+        // retrieve GHO from the vault
+        vault.withdrawForLiquidation(amountToLiquidate);
+        // liquidate GHO and receive USDC
+        _liquidate(GHO, userToLiquidate, amountToLiquidate);
     }
 
-    function getCampaignsByAddress(address _userAddress)
-        public
-        view
-        returns (Campaign[] memory)
-    {
+    //Get All Campaigns owned by an Address
+    function getCampaignsByAddress(
+        address _userAddress
+    ) public view returns (Campaign[] memory) {
         uint256[] storage campaignIds = campaignIdsByAddress[_userAddress];
         Campaign[] memory userCampaigns = new Campaign[](campaignIds.length);
 
@@ -137,57 +138,10 @@ contract KiteMain is
         return userCampaigns;
     }
 
-    function calculateNextPayment(
-        uint256 campaignID,
-        uint256 tradeId,
-        uint256 amount
-    ) internal view returns (uint256) {
-        Campaign storage campaign = campaigns[campaignID];
-
-        // Get the trade details using getTradeDetails
-        (uint256[] memory amounts, uint256[] memory dueDates) = KiteVault(
-            campaign.vaultAddress
-        ).getSplits(campaignID, tradeId);
-
-        if (dueDates.length == 0) {
-            return (campaign.interestRate * amount) / campaign.splitsCount;
-        }
-
-        require(amounts.length > 0, "No remaining splits to process");
-
-        uint256 nextPaymentAmount = amounts[0];
-        // uint256 nextDueDate = dueDates[0];
-
-        return nextPaymentAmount;
-    }
-
-    function _createCampaign(
-        uint256 _interestRate,
-        address _vaultAddress,
-        PaymentInterval _paymentInterval,
-        uint256 _splitsCount,
-        address sender
-    ) internal {
-        campaignIdCounter++;
-        campaigns[campaignIdCounter] = Campaign({
-            campaignId: campaignIdCounter,
-            vaultAddress: _vaultAddress,
-            interestRate: _interestRate,
-            paymentInterval: _paymentInterval,
-            splitsCount: _splitsCount,
-            owner: sender
-        });
-
-        campaignIdsByAddress[sender].push(campaignIdCounter);
-
-        emit CampaignCreated(campaignIdCounter, sender);
-    }
-
     //Chainlink Functions starts here
-    function _ccipReceive(Client.Any2EVMMessage memory any2EvmMessage)
-        internal
-        override
-    {
+    function _ccipReceive(
+        Client.Any2EVMMessage memory any2EvmMessage
+    ) internal override {
         //We'll receive a crosschain message to create a new campaign
         (
             uint256 _interestRate,
@@ -215,36 +169,28 @@ contract KiteMain is
         external
         view
         override
-        returns (
-            bool upkeepNeeded,
-            bytes memory /* performData */
-        )
+        returns (bool upkeepNeeded, bytes memory /* performData */)
     {
         upkeepNeeded =
             (block.timestamp - lastTimeStamp) > interval &&
             arbitrages.length > 0;
     }
 
-    //Perfrom Liquidation
-    function performUpkeep(
-        bytes calldata /* performData */
-    ) external override {
+    //Perfrom Liquidation from ChainLink Automation
+    function performUpkeep(bytes calldata /* performData */) external override {
         if (
             (block.timestamp - lastTimeStamp) > interval &&
             arbitrages.length > 0
         ) {
-            // Create a new array to store salts that you want to keep
-            // bytes32[] memory remainingLoans = new bytes32[](arbitrages.length);
-
-            // for (uint256 i = 0; i < arbitrages.length; i++) {
-
-            // }
-            // salts = new bytes32[](0);
+            // Logic to Perform Liquidation and remove the trade from pending tasks
             lastTimeStamp = block.timestamp;
         }
     }
 
-    function decodeMessage(bytes memory data)
+    //Decode CCIP message
+    function decodeMessage(
+        bytes memory data
+    )
         internal
         pure
         returns (
@@ -275,5 +221,28 @@ contract KiteMain is
             splitsCount,
             owner
         );
+    }
+
+    function _createCampaign(
+        uint256 _interestRate,
+        address _vaultAddress,
+        PaymentInterval _paymentInterval,
+        uint256 _splitsCount,
+        address sender
+    ) internal {
+        campaignIdCounter++;
+
+        campaigns[campaignIdCounter] = Campaign({
+            campaignId: campaignIdCounter,
+            vaultAddress: _vaultAddress,
+            interestRate: _interestRate,
+            paymentInterval: _paymentInterval,
+            splitsCount: _splitsCount,
+            owner: sender
+        });
+
+        campaignIdsByAddress[sender].push(campaignIdCounter);
+
+        emit CampaignCreated(campaignIdCounter, sender);
     }
 }
