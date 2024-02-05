@@ -148,7 +148,7 @@ const Home: React.FC = () => {
       fetchCampaigns();
     }
 
-  }); // Run only once on component mount
+  }); 
 
 
   useEffect(() => {
