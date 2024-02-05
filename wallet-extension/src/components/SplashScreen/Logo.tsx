@@ -1,4 +1,4 @@
-import * as React from "react"
+import { motion } from "framer-motion";
 import {
   chakra,
   keyframes,
@@ -7,6 +7,7 @@ import {
   usePrefersReducedMotion,
 } from "@chakra-ui/react"
 import logo from "../../assets/logo.webp"
+
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
@@ -25,7 +26,21 @@ export const Logo = forwardRef<ImageProps, "img">((props, ref) => {
     transform: "scale(0.1)" // Scale the image down to 80% of its original size
   };
 
-  return <chakra.img
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 100 }} // Initial position at the bottom
+      animate={{ opacity: 1, y: 0, transition: { type: "spring", stiffness: 100, damping: 10, duration: 1 } }} // Final position with floating animation
+    >
+      <motion.img
+        src={logo}
+        alt="Logo"
+        initial={{ scale: 0.2 }} // Initial scale down
+        animate={{ scale: 0.4, transition: { type: "spring", stiffness: 100, damping: 10, duration: 1, delay: 0.5 } }} // Scale up with floating animation
+      />
+      {/* <chakra.img
 
-    animation={animation} src={logo} ref={ref} {...props} style={imageStyles} />
+        animation={animation} src={logo} ref={ref} {...props} style={imageStyles} /> */}
+    </motion.div>
+
+  );
 })

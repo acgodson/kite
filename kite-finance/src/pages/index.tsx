@@ -22,7 +22,7 @@ import CreateCampaignModal from '@/components/Modals/CreateModal';
 import { AddBillModal } from '@/components/Modals/Addbill';
 import { ethers } from 'ethers';
 import vaultFactory from '@/utils/vault.json'
-import { FaAddressBook } from 'react-icons/fa';
+import { FaAddressBook, FaChrome } from 'react-icons/fa';
 import { MetaMaskInpageProvider } from '@metamask/providers';
 import TradeList from '@/components/TradeList';
 
@@ -169,18 +169,16 @@ const Home: React.FC = () => {
       bgGradient="linear(to bottom, black, #111e1d)"
       color="white" minHeight="100vh">
 
-
-      <Flex
+      {/* <Flex
         position={"absolute"}
         w="100%"
         p={8}
         justifyContent={"flex-end"}
         top={0}>
         <ConnectKitButton />
-      </Flex>
+      </Flex> */}
 
       <Box display={"flex"} flexDirection={"column"} alignItems="center" justifyContent="center">
-
 
         <Image
           src="/logo.svg"
@@ -192,100 +190,24 @@ const Home: React.FC = () => {
           <span style={{
             color: "#c5ff48"
           }}>
-            Buy Now Pay Later
-          </span> with Aave Integration.
+            Savings
+          </span> Wallet
         </Box>
 
-        {/* Comparing Features */}
-        <Stack spacing={6} align="start" mb={12}
-          w="100%"
-        >
-          <Stack w="100%" spacing={5} direction={["column", "column", "row"]}>
-            {!address ?
-              <List border={"1px solid gray"} p={8} borderRadius={"12px"} w="100%">
-                <FeatureListItem icon={<Icon as={GiCheckMark} color={"#06b670"} />} text="Access Controlled Vaults" />
-                <FeatureListItem icon={<Icon as={GiCheckMark} color={"#06b670"} />} text="Earn Offsets from deposits" />
-                <FeatureListItem icon={<Icon as={GiCheckMark} color={"#06b670"} />} text="Automatic Liquidation" />
-              </List> :
-              <Box minW="300px" border={"1px solid gray"} p={8} borderRadius={"12px"} w="100%">
-                <Text textAlign={"right"} fontSize={"sm"} fontWeight={"semibold"}>My Balance</Text>
-                <Center>
-                  <Box textAlign={"center"}>
-                    <HStack>
-                      <Box> <Text fontSize={"2xl"} fontWeight={"bold"}>${shares ? lqds! + shares : 0}</Text>
-                      </Box>
-                    </HStack>
-                    <Divider py={2} />
-                    <HStack py={2}>
-                      <Box borderRight={'0.5px solid white'} px={3}>
-                        <Text fontSize={"xs"} color={"#06b670"} fontWeight={"bold"}>Vault</Text>
-                        <Text fontSize={"xs"} fontWeight={"bold"}>{shares} GHO</Text>
-                      </Box>
-                      <Box borderRight={'0.5px solid white'} px={3}>
-                        <Text fontSize={"xs"} color={"#06b670"} fontWeight={"bold"}>Lqd</Text>
-                        <Text fontSize={"xs"} fontWeight={"bold"}>{lqds} USDC</Text>
-                      </Box>
-                      <Box borderRight={'none'} px={3}>
-                        <Text fontSize={"xs"} color={"#06b670"} fontWeight={"bold"}>Swaps</Text>
-                        <Text fontSize={"xs"} fontWeight={"bold"}>0%</Text>
-                      </Box>
-                    </HStack>
 
-                  </Box>
-                </Center>
+        <Stack pt={3} justifyContent={"center"} w="100%" spacing={5} direction={["column", "column", "row"]}>
 
-
-
-              </Box>
-
-            }
-
-            <List w="100%" border={"1px solid gray"} p={8} borderRadius={"12px"}>
-
-              {address ?
-                <>
-                  <Center>
-                    <Box>    <Button
-                      onClick={toggleCreateCampaignModal}
-                    >Add Campaign</Button></Box> <Box w={5} />
-                    <Box>          <Button
-                      onClick={toggleBillModalOpen}
-                    >New Payment</Button></Box>
-                  </Center>
-
-                </> :
-                <Center>
-                  <Box>
-                    <Text
-                      color="linear(to bottom, black, #111e1d)"
-                      fontWeight={"black"}
-                      fontSize={'xl'} py={3}>Pay in Kite Installment</Text>
-                    <Box>     <ConnectKitButton />
-                    </Box>
-                  </Box>
-                </Center>
-
-              }
-
-
-
-            </List>
-          </Stack>
-        </Stack>
-
-
-        <Stack w="100%">
-          <Text fontSize={"xl"} fontWeight={"semi-bold"} color={"whiteAlpha.500"}> In Progress</Text>
-          < Divider />
-
-          {myTrades && myTrades?.length > 0 && <TradeList trades={myTrades} />}
+          <Button
+            fontSize={"2xl"}
+            leftIcon={<FaChrome />}
+            h="65px"
+          >
+            Download Extension
+          </Button>
 
         </Stack>
+
       </Box>
-
-
-      <CreateCampaignModal isOpen={isCreateCampaignModalOpen} onClose={toggleCreateCampaignModal} />
-      <AddBillModal isOpen={isBillModalOpen} onClose={toggleBillModalOpen} />
 
     </Box>
   );

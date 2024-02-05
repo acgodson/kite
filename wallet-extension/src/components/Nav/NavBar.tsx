@@ -15,7 +15,8 @@ const NavBar = () => {
             textAlign="center"
             fontSize="xl">
             <HStack pt={1} px={4} justifyContent="space-between">
-                <Image src={logo} h="30px" pointerEvents="none" />
+                {/* <Image src={logo} h="30px" pointerEvents="none" /> */}
+                <Box />
                 <ColorModeSwitcher justifySelf="flex-end" />
             </HStack>
         </Box>

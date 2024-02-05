@@ -1,34 +1,55 @@
 
 
-import { Box, Image, Text, Grid, VStack, useClipboard, Center, HStack, Button, Container, Flex, Avatar, Card, Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader, DrawerOverlay, useDisclosure, Slide, Heading, useColorMode, useToast, Tooltip } from "@chakra-ui/react";
-import logo from "../../assets/logo.webp"
-import { ColorModeSwitcher } from "./ColorModeSwitcher";
-import { BiCheck, BiCopy, BiScan } from "react-icons/bi";
 import { useState } from "react";
+import { Box, Text, VStack, useClipboard, Center, HStack, Button, Flex, Card, useDisclosure, Slide, Heading, useColorMode, Tooltip, List, ListItem } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
+import { BiCopy, BiScan } from "react-icons/bi";
 import QRCode from "react-qr-code";
-import { shortenAddress } from "../../utils/helpers";
+import { FaLock, FaPlusCircle } from "react-icons/fa";
+import { renderAvatar, shortenAddress } from "../../utils/helpers";
+import { useAppContext } from "../../contexts/appContext";
 
 
 
 
 
-const HomeNav = ({ wallet }: { wallet: string }) => {
-    const [address, setAddress] = useState("Ox12...905j"); // Replace with the actual address
+const HomeNav = () => {
+
+    const { accounts, activeAccount, setActiveAccount, setBalance, setTokens } = useAppContext();
     const { isOpen, onClose, onOpen } = useDisclosure()
     const [page, setPage] = useState<number | null>(null)
     const { colorMode } = useColorMode();
-    const { value, setValue, onCopy } = useClipboard(wallet)
-    const toast = useToast();
     const [showTooltip, setShowTooltip] = useState(false);
+    const [showTooltip2, setShowTooltip2] = useState(false);
+    const [accountIndex, setAccountIndex] = useState(0);
+    const { onCopy, setValue } = useClipboard(accounts[accountIndex].address)
+
+    const navigate = useNavigate();
+
+    const handleAccountSelect = (account: any) => {
+        setActiveAccount(account);
+        setBalance(null);
+        setTokens(null)
+        onClose();
+    };
 
 
-
-    const handleCopy = () => {
+    const handleCopy = (value: string) => {
         onCopy();
         setShowTooltip(true);
         setTimeout(() => {
             setShowTooltip(false);
-        }, 2000); // Hide the tooltip after 2 seconds
+        }, 2000);
+    };
+
+
+    const handleCopy2 = (value: string) => {
+        // alert(value);
+        onCopy();
+        setShowTooltip2(true);
+        setTimeout(() => {
+            setShowTooltip2(false);
+        }, 2000);
     };
 
 
@@ -54,20 +75,21 @@ const HomeNav = ({ wallet }: { wallet: string }) => {
                                 setPage(0)
                                 onOpen();
                             }} fontWeight={"bold"}>   <BiScan /></Button>
-                        <Button bg="rgba(50, 143, 93, 0.1)" onClick={handleCopy} ml={3}>{shortenAddress(wallet)}</Button>
+                        <Button bg="rgba(50, 143, 93, 0.1)" onClick={() => handleCopy(activeAccount?.address!)} ml={3}>{shortenAddress(activeAccount?.address || "")}</Button>
                         {showTooltip && <Tooltip label="Copied"
                             isOpen={showTooltip} placement="top"><Box />
                         </Tooltip>
                         }
                     </Flex>
 
-                    <Box as="button" onClick={() => {
+                    <Box onClick={() => {
                         setPage(1)
                         onOpen();
-                    }} h="40px" w="40px" rounded={"full"} bg="#111e1d" />
+                    }} h="40px" w="40px" rounded={"full"}
+                        as="img"
+                        src={renderAvatar(activeAccount?.address!)}
+                    />
                     {/* <Image src={logo} h="30px" pointerEvents="none" /> */}
-
-
                 </HStack>
 
 
@@ -105,8 +127,9 @@ const HomeNav = ({ wallet }: { wallet: string }) => {
                                     h="50px"
                                     my={8}
                                     w="100%"
+                                    fontSize={"xs"}
                                     boxShadow={"none"}>
-                                    {address}
+                                    {activeAccount?.address || ""}
                                 </Button>
                                 <Center>
                                     <Box
@@ -126,7 +149,7 @@ const HomeNav = ({ wallet }: { wallet: string }) => {
                                             <QRCode
                                                 fgColor={colorMode === "light" ? "black" : "white"}
                                                 bgColor={colorMode === "light" ? "white" : "#2d3748"}
-                                                value={address} size={160} />
+                                                value={activeAccount?.address || ""} size={160} />
                                         </Card>
                                     </Box>
                                 </Center>
@@ -139,30 +162,96 @@ const HomeNav = ({ wallet }: { wallet: string }) => {
                                     </Button>
                                 </HStack>
 
-                                <Box
-                                    h="50px"
-                                    my={8}
+                                <VStack
                                     w="100%"
-                                    boxShadow={"none"}>
-                                    <Flex p={3}
-                                        borderRadius={"10px"}
-                                        border={"0.3px solid"}
-                                        justify={"space-between"}>
-                                        <HStack spacing={3}>
-                                            <Box bg="black" h="40px" w="40px" rounded={"full"} />
-                                            <Box fontSize={"sm"}>
-                                                <Text fontWeight={"semibold"}> Account 1</Text>
-                                                <Text>{shortenAddress(wallet)}</Text>
-                                            </Box>
+                                    h="100%"
+                                    alignItems={"space-between"}
+                                    justifyContent={"space-between"}
+                                >
+                                    <List mt={8}>
+                                        {accounts.map((account, index) => (
+                                            <ListItem key={`${account.address}${index}`}
+                                                pb={2}
+                                                my={3}
+                                                style={{
+                                                    border: activeAccount?.address === account.address ? '2px solid #68d391' : '0.3px solid',
+                                                    borderRadius: '10px',
+                                                    boxShadow: 'none',
+                                                    cursor: 'pointer',
+                                                }}
+                                            >
+                                                <Box h="50px" my={1} w="100%">
+                                                    <Flex justify={"space-between"}>
+                                                        <HStack
+                                                            p={3}
+                                                            spacing={3}
+                                                            // bg="red"
+                                                            w="100%"
+                                                            // h="100%"
+                                                            onClick={() => handleAccountSelect(account)}
+                                                        >
+                                                            <Box as="img" src={renderAvatar(account?.address!)} h="40px" w="40px" rounded={"full"} />
+                                                            <Box fontSize={"sm"}>
+                                                                <Text fontWeight={"semibold"}> Account {index + 1}</Text>
+                                                                <Text>{shortenAddress(account?.address || "")}</Text>
+                                                            </Box>
+                                                        </HStack>
+
+                                                        <Box as="button">
+                                                            <Button bg="rgba(50, 143, 93, 0.1)" onClick={() => {
+                                                                handleCopy2(account?.address!);
+                                                                setAccountIndex(index)
+                                                            }} ml={3}>
+                                                                <BiCopy size={24} opacity={0.3} fontWeight={"semibold"} />
+                                                            </Button>
+                                                            {showTooltip2 && index === accountIndex && <Tooltip label="Copied"
+                                                                isOpen={showTooltip2} placement="top"><Box />
+                                                            </Tooltip>}
+
+                                                        </Box>
+                                                    </Flex>
+                                                </Box>
+                                            </ListItem>
+                                        ))}
+
+                                        <HStack py={8} alignItems={"center"} cursor={"pointer"} as="button" onClick={() => navigate("/import")}>
+                                            <FaPlusCircle style={{ color: "#68d391" }} />
+                                            <Text color="green.300" fontWeight={"bold"}>Import Accounts</Text>
                                         </HStack>
-                                        <Box as="button">
-                                            <BiCopy size={24} opacity={0.3}
-                                                fontWeight={"semibold"} />
+                                    </List>
+                                    <Box>
+                                        <Box
+                                            mt={4}
+                                            h="65px"
+                                            w="100%"
+                                            bg="transparent"
+                                            borderRadius={"12px"}
+                                            border="0.5px solid"
+                                            px={4}
+                                            as="button"
+                                            // position={"absolute"}
+                                            bottom={0}
+                                            onClick={() => {
+                                                navigate("/lock")
+                                            }}
+                                        >
+                                            <HStack h="100%" spacing={3} alignItems="center" justifyContent={"center"}>
+                                                <FaLock
+                                                    fontSize="md"
+                                                // color="red"
+                                                />
+                                                <Box>
+                                                    <Text
+                                                        // color="#333"
+                                                        fontWeight={"semibold"}>
+                                                        Lock
+                                                    </Text>
+                                                </Box>
+                                            </HStack>
                                         </Box>
-                                    </Flex>
-                                </Box>
+                                    </Box>
 
-
+                                </VStack>
 
                             </>
                     )}
@@ -176,3 +265,4 @@ const HomeNav = ({ wallet }: { wallet: string }) => {
 };
 
 export default HomeNav;
+

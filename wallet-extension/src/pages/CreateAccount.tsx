@@ -1,40 +1,96 @@
 
 
 import AnimatedSpinner from "../components/AnimatedSpinner";
-import { Box, Text, Grid, Image, VStack, Center, Card, Button, HStack, Heading, Input, InputGroup, InputRightElement } from "@chakra-ui/react";
+import { Box, Text, Grid, Image, VStack, Center, Card, Button, HStack, Heading, Input, InputGroup, InputRightElement, Flex, useClipboard, Tooltip } from "@chakra-ui/react";
 import logo from "../assets/logo.webp"
 import cover from "../assets/cover.png"
 import { BiError } from 'react-icons/bi';
 import { useNavigate } from "react-router-dom";
-import { FaCheckCircle, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaCheckCircle, FaCopy, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useState } from "react";
-import { ethers } from "ethers";
+import { Wallet, ethers } from "ethers";
 import { shortenAddress } from "../utils/helpers";
+import { useAppContext } from "../contexts/appContext";
+import PasswordValidator from "../components/Settings/PasswordValidator";
+import { decryptPrivateKey, encryptPrivateKey } from "../components/Settings/crypto";
+import { CreatingWalletLoader } from "../components/Settings/CreatingWalletLoader";
+import { storage } from "../utils/storage";
 
-
+declare var chrome: any;
 
 const steps = [0, 1, 2];
 
-const CreateAccount = ({ setWallet, setSeedPhrase }: any) => {
+const CreateAccount = () => {
+    const { showSplashScreen,
+        password,
+        setPassword,
+        accounts,
+        setAccounts,
+        activeAccount,
+        setActiveAccount, } = useAppContext();
     const navigate = useNavigate();
+    const [repeatPassword, setRepeatPassword] = useState("gamer");
     const [showPassword, setShowPassword] = useState(false);
     const [stepIndex, setStepIndex] = useState(0);
-    const [newSeedPhrase, setNewSeedPhrase] = useState<any>();
-    const [newWallet, setNewWallet] = useState("");
+    const [backup, setBackup] = useState<any | null>(null);
+    const [showTooltip, setShowTooltip] = useState(false);
+    const { onCopy } = useClipboard(backup)
+    // const [isLoading, setIsLoading] = useState(true)
+
+    const handleCopy = () => {
+        onCopy();
+        setShowTooltip(true);
+        setTimeout(() => {
+            setShowTooltip(false);
+        }, 2000); // Hide the tooltip after 2 seconds
+    };
 
 
-    function generateWallet() {
-        const mnemonic = ethers.Wallet.createRandom().mnemonic?.phrase;
-        console.log(mnemonic)
-        setNewSeedPhrase(mnemonic);
-        setSeedPhrase(mnemonic);
-        const wallet = ethers.Wallet.fromPhrase(mnemonic!)?.address;
-        setNewWallet(wallet)
-        setWallet(wallet);
 
+    function verifyPassword() {
+        if (password !== repeatPassword) {
+            return;
+        }
+        generateWallet();
     }
 
-    // function set
+
+    async function generateWallet() {
+        const mnemonic = ethers.Wallet.createRandom().mnemonic?.phrase;
+        setBackup(mnemonic);
+        const address = Wallet.fromPhrase(mnemonic!).address;
+        const privateKey = Wallet.fromPhrase(mnemonic!).privateKey;
+        const encryptedPrivateKey = encryptPrivateKey(privateKey, password)
+        //new account
+        const account = {
+            address,
+            privateKey: await encryptedPrivateKey,
+        }
+
+        console.log(" private key", privateKey)
+        //update accounts state
+        setAccounts([account])
+        //decrypt private Key
+        const pKey = await decryptPrivateKey(await encryptedPrivateKey, password)!
+        console.log("decrypted private key", pKey)
+        if (!pKey) {
+            //handle error
+            console.error("failed to retrieve privateKey, incorrect password");
+        }
+
+        const accountsObject = { accounts: [account] };
+
+        storage.local.set(accountsObject, function () {
+            console.log('Accounts saved:', accountsObject);
+        });
+
+        //set Active Account
+        setActiveAccount({
+            address: address,
+            privateKey: pKey!,
+        }
+        )
+    }
 
 
     const togglePassword = () => {
@@ -42,15 +98,10 @@ const CreateAccount = ({ setWallet, setSeedPhrase }: any) => {
     }
 
     const handleCreate = () => {
-        //TODO: confirm or store password
-
-
         //create nnemonic
         if (stepIndex === 0) {
-            generateWallet();
+            verifyPassword();
         }
-
-
         if (stepIndex < 2) {
             setStepIndex(stepIndex + 1);
             return
@@ -73,72 +124,12 @@ const CreateAccount = ({ setWallet, setSeedPhrase }: any) => {
         >
 
             {stepIndex === 2 && (
-                <Box h="100%" pb={24} display={"flex"} flexDir={"column"} justifyContent={"space-between"}>
-                    <Box mt={8}>
-
-                        <HStack spacing={3}
-                            justifyContent={"center"}
-                            alignItems={"center"}
-                            pb={3}
-                            opacity={"0.8"}
-                            color="#66b473"
-                        >
-                            <Box><FaCheckCircle size="24px" /></Box>
-                            <Box><Heading fontSize={"24px"}>New Wallet Address</Heading></Box>
-                        </HStack>
-
-                        <Box
-                            w="100%"
-                            px="4"
-                            pb={8}
-                            borderRadius={"12px"}
-                            border={"0.1px solid rgba(50, 143, 93, 0.3)"}
-                        >
-                            <Box w="100%">
-                                <Button
-                                    w="100%"
-                                    bg={"rgba(50, 143, 93, 0.1)"}
-                                    mt={4}
-                                    h="60px"
-                                    fontSize={"lg"}
-                                    onClick={() => navigate("/home")}
-                                >
-                                    {shortenAddress(newWallet)}
-                                </Button>
-                            </Box>
-                        </Box>
-                    </Box>
-
-                    <Box>
-                        <Button
-                            w="100%"
-                            bg="#66b473"
-                            mt={4}
-                            color="#1d2b32"
-                            h="60px"
-                            fontSize={"lg"}
-                            borderRadius={"12px"}
-                            onClick={handleCreate}
-                        >
-                            Better Way to Save & Invest
-                        </Button>
-
-                        <Button
-                            w="100%"
-                            mt={4}
-                            h="60px"
-                            fontSize={"lg"}
-                            borderRadius={"12px"}
-                            onClick={() => navigate("/home")
-                            }
-                        >
-                            Skip for Now
-                        </Button>
-                    </Box>
-
-                </Box>
+                <>
+                    <CreatingWalletLoader />
+                </>
             )
             }
+
 
             {
                 stepIndex !== 2 && (
@@ -149,13 +140,11 @@ const CreateAccount = ({ setWallet, setSeedPhrase }: any) => {
                         borderRadius={"12px"}
                         border={"0.1px solid rgba(50, 143, 93, 0.3)"}
                     >
-
                         <HStack w="350px"
                             top={0}
                             position={"fixed"}
                             mt={12}
                             alignItems={"center"}
-                            // p={2}
                             justifyContent={"center"}>
                             {steps.map((x, i) => (
                                 <Box
@@ -164,6 +153,7 @@ const CreateAccount = ({ setWallet, setSeedPhrase }: any) => {
                                     rounded={"full"} h="12px" w="12px" />
                             ))}
                         </HStack>
+
 
                         <Center
                             pt={18}
@@ -177,37 +167,41 @@ const CreateAccount = ({ setWallet, setSeedPhrase }: any) => {
                                 {stepIndex === 0 && (
                                     <Box w="100%">
                                         <Heading fontSize={"24px"} textAlign={"center"}>Create new Wallet</Heading>
+                                        <PasswordValidator password={password} repeatPassword={repeatPassword}>
+                                            <InputGroup>
+                                                <Input
+                                                    mt={4}
+                                                    placeholder="Enter password"
+                                                    type={showPassword ? "text" : "password"}
+                                                    h="60px"
+                                                    borderRadius={"12px"}
+                                                    value={password}
+                                                    onChange={(e) => setPassword(e.target.value)}
+                                                />
+                                                <InputRightElement mt={4} h="60px">
+                                                    <Box
+                                                        as="button" onClick={togglePassword}>
+                                                        {showPassword ? <FaEye /> : <FaEyeSlash />}
+                                                    </Box>
+                                                </InputRightElement>
+                                            </InputGroup>
 
-                                        <InputGroup>
                                             <Input
                                                 mt={4}
-                                                placeholder="Enter password"
+                                                placeholder="Repeat password"
                                                 type={showPassword ? "text" : "password"}
                                                 h="60px"
-                                                borderRadius={"12px"}
+                                                borderRadius={"12px"} value={repeatPassword}
+                                                onChange={(e) => setRepeatPassword(e.target.value)}
                                             />
-                                            <InputRightElement mt={4} h="60px">
-                                                <Box
-                                                    as="button" onClick={togglePassword}>
-                                                    {showPassword ? <FaEye /> : <FaEyeSlash />}
-                                                </Box>
-                                            </InputRightElement>
-                                        </InputGroup>
-
-                                        <Input
-                                            mt={4}
-                                            placeholder="Repeat password"
-                                            type={showPassword ? "text" : "password"}
-                                            h="60px"
-                                            borderRadius={"12px"}
-                                        />
+                                        </PasswordValidator>
                                     </Box>
 
                                 )}
 
                                 {stepIndex === 1 && (
                                     <Box mt={12} w="100%">
-                                        <Heading fontSize={"24px"} textAlign={"center"}>Recovery Seed Phrase</Heading>
+                                        <Heading fontSize={"24px"} textAlign={"center"}>Backup  Phrase</Heading>
                                         <HStack
                                             mt={1}
                                             opacity={"0.7"}
@@ -223,44 +217,56 @@ const CreateAccount = ({ setWallet, setSeedPhrase }: any) => {
                                         <Card mt={3} display={"flex"} alignItems={"center"} justifyContent={"center"} h="200px">
                                             <Center h="100%">
                                                 {/* {newSeedPhrase} */}
-                                                <Grid placeItems={"center"} placeContent={"center"} templateColumns="repeat(3, 1fr)" gap={4}>
-                                                    {newSeedPhrase && newSeedPhrase.split(" ").map((word: string, index: number) => (
-                                                        <Box key={index} textAlign="left">
-                                                            {index + 1}. {word}
-                                                        </Box>
+                                                <Grid w="100%" placeItems={"center"} placeContent={"center"} templateColumns="repeat(3, 1fr)" gap={4}>
+                                                    {backup && backup.split(" ").map((word: string, index: number) => (
+                                                        <Flex borderRadius={"5px"} py={1} w="70px" bg="rgba(241 ,247, 244, 0.3)" key={index} textAlign="left">
+                                                            <Text fontSize={"xs"} pr={2}>   {index + 1}.</Text>
+                                                            <Text fontWeight={"semibold"} fontSize={"sm"}>{word}</Text>
+                                                        </Flex>
                                                     ))}
                                                 </Grid>
                                             </Center>
                                         </Card>
+                                        <Box>
+                                            <Button
+                                                color="gray"
+                                                w="100%"
+                                                mt={4}
+                                                onClick={handleCopy}
+                                                borderRadius={"12px"}
+                                                rightIcon={<FaCopy />}
+                                            >Copy </Button>
 
-                                        <Button
-                                            w="100%"
-                                            mt={4}
-                                            borderRadius={"12px"}
-                                        >Copy </Button>
+                                            {showTooltip && <Tooltip label="Copied"
+                                                isOpen={showTooltip} placement="top"><Box /></Tooltip>}
+                                        </Box>
                                     </Box>
-
                                 )}
-
 
                                 <Box w="100%">
                                     <Button
                                         w="100%"
                                         bg="#66b473"
-                                        mt={4}
-                                        h="60px"
+                                        color="white"
+                                        _hover={{
+                                            bg: "#66b473",
+                                            color: "white"
+                                        }}
+                                        mt={6}
+                                        h="55px"
                                         fontSize={"lg"}
                                         borderRadius={"12px"}
+                                        isDisabled={stepIndex === 0 && password.length < 1 || repeatPassword.length < 1 ? true :
+                                            false
+                                        }
                                         onClick={handleCreate}
                                     >
                                         {
-                                            stepIndex == 1 ? "Open Wallet" : "Create"
+                                            stepIndex == 1 ? "I have Stored my seed phrase" : "Create"
                                         }
                                     </Button>
 
                                 </Box>
-
-
 
                             </VStack>
                         </Center>

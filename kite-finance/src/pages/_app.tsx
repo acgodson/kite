@@ -17,7 +17,7 @@ const config = createConfig(
     walletConnectProjectId: "7d2b2502c872077d05e9a79e16f756ab",
     chains: chains,
     appName: "Kite",
-    appDescription: "BNPL on Kite",
+    appDescription: "Kite Finance",
     appUrl: "https://family.co",
     appIcon: "https://family.co/logo.png",
   }),

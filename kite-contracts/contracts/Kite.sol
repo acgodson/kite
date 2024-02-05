@@ -105,18 +105,18 @@ contract Kite is AccessControl {
     }
 
     // Checks if a remittance is due
-    function checkUpkeep(address token)
+    function checkUpkeep(address token, address sender)
         external
         view
         returns (bool upkeepNeeded)
     {
-        address pool = poolbyTokens[msg.sender][token];
+        address pool = poolbyTokens[sender][token];
 
         if (pool == address(0)) {
             //return if no pool is found
             return false;
         }
-        uint256 userBalance = ERC20(token).balanceOf(msg.sender);
+        uint256 userBalance = ERC20(token).balanceOf(sender);
 
         (bool isActive, uint256 unlockTimestamp) = IStrategy(pool)
             .getTokenDetails(token);
@@ -129,20 +129,21 @@ contract Kite is AccessControl {
 
     // Perfom remittance to savings pool///
     function performUpKeep(
-        address token //  ,address sender
+        address token,
+        address sender
     ) external {
         //retrieve pool
-        address pool = poolbyTokens[msg.sender][token];
+        address pool = poolbyTokens[sender][token];
         require(pool != address(0), "invalid pool");
 
         //calculate rounddown
-        uint256 amount = _roundDownERC20Balance(token, msg.sender);
+        uint256 amount = _roundDownERC20Balance(token, sender);
         require(amount > 0, "invalid deposit amount");
 
         //deposit into pool
-        IStrategy(pool).deposit(token, amount, msg.sender);
+        IStrategy(pool).deposit(token, amount, sender);
 
-        emit Deposit(pool, token, msg.sender, amount);
+        emit Deposit(pool, token, sender, amount);
     }
 
     // filter user's pools by the Kite strategies they implement
@@ -211,7 +212,7 @@ contract Kite is AccessControl {
         pure
         returns (bool)
     {
-        // Check if balance is not a multiple of 10 (18 decimals)
+        // Check if balance is not a multiple of 10 (18 decimals) TODO: not only fullstop
         return balance % 10**18 != 0;
     }
 

@@ -8,7 +8,7 @@ import "../helpers/IStrategy.sol";
 contract SafeLock is Initializable, IStrategy {
     //address of  Kite Core
     address constant _KITECORE =
-        address(0x66EC7F74D59214560DE1b0CaD2527d2b2a998FC4);
+        address(0xD6b804951f7FBeA42587b6b66c4302f186554837);
 
     // Token whitelisted for savings
     struct TokenWhitelist {

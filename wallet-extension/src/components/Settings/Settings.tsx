@@ -4,16 +4,19 @@ import { shortenAddress } from "../../utils/helpers";
 import { ColorModeSwitcher } from "../Nav/ColorModeSwitcher";
 import { BiArrowBack, BiTrash } from "react-icons/bi";
 import { FaChevronRight, FaExternalLinkAlt, FaEye, FaEyeSlash, FaKey, FaLink } from "react-icons/fa";
+import { useAppContext } from "../../contexts/appContext";
 
 
 
 
-const SettingsView = ({ address }: { address: string }) => {
+const SettingsView = () => {
+    const { accounts, activeAccount, setActiveAccount, } = useAppContext();
     const [view, setView] = useState("main");
     const { colorMode } = useColorMode();
     const [showPassword, setShowPassword] = useState(false)
     const [password, setPassword] = useState("");
     const [repeatPassword, setRepeatPassword] = useState("");
+    const address = activeAccount?.address!;
 
     const togglePassword = () => {
         setShowPassword(!showPassword);
@@ -58,8 +61,8 @@ const SettingsView = ({ address }: { address: string }) => {
                                 rounded={"full"}
                             />
                             <Box>
-                                <Text fontWeight={"bold"} fontSize={"sm"} textAlign={"left"}> Account 1</Text>
-                                {/* <br /> */}
+                                <Text fontWeight={"bold"} fontSize={"sm"} textAlign={"left"}> Account {accounts.findIndex((x) => x.address === activeAccount?.address) + 1}</Text>
+
                                 <Text>{shortenAddress(address)}</Text>
 
                             </Box>
