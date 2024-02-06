@@ -1,31 +1,11 @@
 
 import { useEffect, useState } from "react";
 import { ChakraProvider, Text, Box, Tabs, TabList, Tab, TabPanels, TabPanel, Image, Grid, List, ListItem, Flex, HStack, Divider, Avatar } from "@chakra-ui/react";
-import { BiCopy } from "react-icons/bi";
-import { Wallet, ethers } from "ethers";
+import { ethers } from "ethers";
 import { useAppContext } from "../../contexts/appContext";
-import { PegasusRPC } from "../../utils/consts";
-import { fetchCryptoPriceInUSD, renderAvatar } from "../../utils/helpers";
+import { renderAvatar } from "../../utils/helpers";
+import { Asset } from "../../utils/types";
 
-
-
-interface Asset {
-    token: {
-        address: string,
-        circulating_market_cap: null | string,
-        decimals: string,
-        exchange_rate: null,
-        holders: string,
-        icon_url: null | string | any,
-        name: string,
-        symbol: string,
-        total_supply: string,
-        type: string
-    },
-    token_id: null | string,
-    token_instance: null | string,
-    value: string
-}
 
 // export const tokens = [
 //     {
@@ -48,13 +28,13 @@ interface Asset {
 // ]
 
 const MyTokens = ({ tokens, setView, setSelectedToken }: { tokens: any, setView: any, setSelectedToken: any }) => {
-    const { showSplashScreen,
-        password,
-        setPassword,
-        accounts,
-        setAccounts,
-        activeAccount,
-        setActiveAccount, } = useAppContext();
+    // const { showSplashScreen,
+    //     password,
+    //     setPassword,
+    //     accounts,
+    //     setAccounts,
+    //     activeAccount,
+    //     setActiveAccount, } = useAppContext();
 
     return (
         <ChakraProvider>
@@ -73,18 +53,16 @@ const MyTokens = ({ tokens, setView, setSelectedToken }: { tokens: any, setView:
                             left={0}
                             px={2}
                             borderRadius={"10px"}
-                        // border={"0.1px solid rgba(50, 143, 93, 0.3)"}
                         >
                             {tokens && tokens.map((token: Asset, index: number) => {
                                 const roundedBalance = parseFloat(ethers.formatEther(token.value as any)).toFixed(Math.max(2, token.value?.toString().split(".")[1]?.length || 0))
-                                console.log(roundedBalance);
                                 const value = token.token.exchange_rate! * Number(roundedBalance);
                                 const price = parseFloat(value.toFixed(2).toString());
                                 return (
 
                                     <ListItem
                                         cursor={"pointer"}
-                                        key={token.token.name}
+                                        key={`${token.token.name}-${index}`}
                                         onClick={() => {
                                             setView("token");
                                             setSelectedToken(token.token.symbol);
@@ -122,22 +100,18 @@ const MyTokens = ({ tokens, setView, setSelectedToken }: { tokens: any, setView:
                             })}
 
                         </List>
-
-
-
                     </TabPanel>
                     <TabPanel>
                         <Grid templateColumns="repeat(3, 1fr)" gap={6}>
-                            {/* Mock NFTs with square images */}
-                            <Box>
-                                <Image boxSize="100px" src="nft1.jpg" alt="NFT 1" />
-                            </Box>
-                            <Box>
-                                <Image boxSize="100px" src="nft2.jpg" alt="NFT 2" />
-                            </Box>
-                            <Box>
-                                <Image boxSize="100px" src="nft3.jpg" alt="NFT 3" />
-                            </Box>
+                            {[0, 1, 2].map((x, i) => (
+                                <Box
+                                    key={i}
+                                    h="70px"
+                                    w="70px"
+                                    bg="whitesmoke"
+                                    opacity={0.1}
+                                />
+                            ))}
                         </Grid>
                     </TabPanel>
                 </TabPanels>

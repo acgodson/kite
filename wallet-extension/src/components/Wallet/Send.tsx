@@ -3,26 +3,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
 import { useAppContext } from "../../contexts/appContext";
+import { Asset } from "../../utils/types";
 
-
-
-interface Asset {
-    token: {
-        address: string,
-        circulating_market_cap: null | string,
-        decimals: string,
-        exchange_rate: null | string,
-        holders: string,
-        icon_url: null | string,
-        name: string,
-        symbol: string,
-        total_supply: string,
-        type: string
-    },
-    token_id: null | string,
-    token_instance: null | string,
-    value: string
-}
 
 const Send = (
     { tokens, selected, setSelectedToken, setView, balance }

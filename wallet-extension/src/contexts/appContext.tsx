@@ -1,11 +1,8 @@
-import { HexString } from 'ethers/lib.commonjs/utils/data';
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { storage } from '../utils/storage';
 import { Asset } from '../utils/types';
 
-
-declare var chrome: any;
 
 interface Account {
     address: string;
@@ -25,10 +22,14 @@ type AppContextType = {
     setBalance: React.Dispatch<React.SetStateAction<number | null>>;
     tokens: Asset[] | null | any[];
     setTokens: React.Dispatch<React.SetStateAction<Asset[] | null | any[]>>;
+    fetching: boolean;
+    setFetching: React.Dispatch<React.SetStateAction<boolean>>;
     recipient: string;
     setRecipient: React.Dispatch<React.SetStateAction<string>>;
     amount: string;
     setAmount: React.Dispatch<React.SetStateAction<string>>;
+    pool: any;
+    setPool: React.Dispatch<React.SetStateAction<any | null>>;
 
     selectedToken: string;
     setSelectedToken: React.Dispatch<React.SetStateAction<string>>;
@@ -65,7 +66,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const [showSplashScreen, setShowSplashScreen] = useState(false);
 
     //account states
-    const [password, setPassword] = useState("gamer");
+    const [password, setPassword] = useState("");
     const [accounts, setAccounts] = useState<Account[] | any[]>([])
     const [activeAccount, setActiveAccount] = useState<Account | null>(null);
     const [balance, setBalance] = useState<number | null>(null);
@@ -75,6 +76,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const [recipient, setRecipient] = useState('');
     const [amount, setAmount] = useState("0");
     const [selectedToken, setSelectedToken] = useState("ETH");
+    const [fetching, setFetching] = useState(true);
+    const [pool, setPool] = useState<any | null>(null);
 
     const [contractAddress, setContractAddress] = useState<string | null>(null)
     const [method, setMethod] = useState<string | null>(null)
@@ -131,10 +134,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setBalance,
         tokens,
         setTokens,
+        fetching,
+        setFetching,
         recipient,
         setRecipient,
         amount,
         setAmount,
+        pool,
+        setPool,
         selectedToken,
         setSelectedToken,
         contractAddress,

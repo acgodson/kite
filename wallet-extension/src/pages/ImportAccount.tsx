@@ -27,12 +27,13 @@ const ImportAccount = () => {
         activeAccount,
         setActiveAccount, } = useAppContext();
     const navigate = useNavigate();
-    const [repeatPassword, setRepeatPassword] = useState("gamer");
+    const [repeatPassword, setRepeatPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [stepIndex, setStepIndex] = useState(0);
     const [confirm, setConfirm] = useState(false);
-    const [phrase, setPhrase] = useState<any>("pistol leisure swear hair bracket scrub install edge staff cement rival east");
+    const [phrase, setPhrase] = useState<any>("");
+    // const [phrase, setPhrase] = useState<any>("pistol leisure swear hair bracket scrub install edge staff cement rival east");
     // const [phrase, setPhrase] = useState<any>("canvas wash trdansfer pair tray into alcohol harsh simple plunge absorb win");
     // const [phrase, setPhrase] = useState<any>("shallow thank emerge grape dinosaur deer yard marble brain sail between barrel");
     const [newWallet, setNewWallet] = useState("");

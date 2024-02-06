@@ -21,21 +21,14 @@ declare var chrome: any;
 const steps = [0, 1, 2];
 
 const CreateAccount = () => {
-    const { showSplashScreen,
-        password,
-        setPassword,
-        accounts,
-        setAccounts,
-        activeAccount,
-        setActiveAccount, } = useAppContext();
+    const { password, setPassword,  setAccounts,  setActiveAccount, } = useAppContext();
     const navigate = useNavigate();
-    const [repeatPassword, setRepeatPassword] = useState("gamer");
+    const [repeatPassword, setRepeatPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [stepIndex, setStepIndex] = useState(0);
     const [backup, setBackup] = useState<any | null>(null);
     const [showTooltip, setShowTooltip] = useState(false);
     const { onCopy } = useClipboard(backup)
-    // const [isLoading, setIsLoading] = useState(true)
 
     const handleCopy = () => {
         onCopy();
@@ -129,7 +122,6 @@ const CreateAccount = () => {
                 </>
             )
             }
-
 
             {
                 stepIndex !== 2 && (

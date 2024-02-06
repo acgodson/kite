@@ -102,8 +102,7 @@ contract MultiCollectionNFT is Initializable, ERC721EnumerableUpgradeable, Ownab
 
     // Internal function to check conditions for a specific user
     function _checkConditions(address user, string memory conditions) internal pure returns (bool) {
-        // Implement your conditions checking logic here
-        // For simplicity, always return true in this example
+        // For simplicity, always return true in this demo
         return true;
     }
 

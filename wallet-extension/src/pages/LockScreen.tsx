@@ -42,10 +42,10 @@ const LockScreen = () => {
                 setAccounts(storedAccounts);
                 let _accounts = [];
 
-                for (let i = 0; i < 1; i++) {
+                for (let i = 0; i < storedAccounts.length; i++) {
                     const account = storedAccounts[i];
 
-                    const pKey = await decryptPrivateKey("uzPGmYq5GvRRVhIPEFbyqQN9k71Okrs/w3am9q8THssAISF+Ljc1q54MGzxek9Z1vZRdc1rHvFGNT8aAjamFGLWFXF8D8GOcWR/2gK4RbrCaVWiVuWIXtpNZSW0P+6N1LiUJAfkuYsiSrt4rQiY=", "gamer");
+                    const pKey = await decryptPrivateKey(account.privateKey, password);
                     if (pKey) {
                         console.log(pKey);
                         const obj = {
@@ -58,10 +58,9 @@ const LockScreen = () => {
                         return;
                     }
                 }
-                console.log("here's the private key mate", _accounts)
-                // setAccounts(_accounts);
-                // setActiveAccount(_accounts[0])
-                // navigate("/home")
+                setAccounts(_accounts);
+                setActiveAccount(_accounts[0])
+                navigate("/home")
 
             });
         } catch (e: any) {

@@ -1,10 +1,9 @@
 import { Box, Tab, TabList, TabPanel, TabPanels, Tabs } from "@chakra-ui/react";
 import { FaWallet, FaChartLine, FaCog, FaClock } from "react-icons/fa";
 import SettingsView from "../components/Settings/Settings";
-import { useAppContext } from "../contexts/appContext";
-import HomeView from "../components/Tokens/HomeView";
-import FinanceView from "../components/Tokens/Finance";
-import ActivityView from "../components/Tokens/ActivityView";
+import HomeView from "../components/Wallet/HomeView";
+import FinanceView from "../components/Wallet/Finance";
+import ActivityView from "../components/Wallet/ActivityView";
 import { motion } from "framer-motion";
 
 
@@ -18,7 +17,7 @@ const Home = () => {
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.6 }}
         >
-            <FinanceView />
+        <FinanceView />
         </motion.div>,
         <ActivityView />,
         <SettingsView/>
@@ -30,8 +29,6 @@ const Home = () => {
         <FaClock />,
         <FaCog />
     ];
-
-
 
 
     return (

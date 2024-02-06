@@ -16,15 +16,12 @@ import MyTokens from "./MyTokens";
 import Send from "./Send";
 import { FiUpload } from "react-icons/fi";
 import { Asset } from "../../utils/types";
-
-
-
-
+import { useWallet } from "../../hooks/useWallet";
+import { useStrategy } from "../../hooks/useStrategy";
 
 
 
 const HomeView = () => {
-    const navigate = useNavigate();
     const {
         activeAccount,
         balance,
@@ -37,320 +34,34 @@ const HomeView = () => {
         setContractAddress,
         setMethod,
         setParams,
+        pool,
+        setPool,
+        // fetching, setFetching
     } = useAppContext();
     const [view, setView] = useState("home");
-    const [price, setPrice] = useState<number | any>(0);
-    const userAddress = activeAccount?.address;
     const [strategy, setStrategy] = useState("");
-    const [clones, setClones] = useState<string[] | null>();
-    const [fetching, setFetching] = useState(true);
-    const [selectedClone, setSelectedClone] = useState<string>("");
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [optedIn, setOptedIn] = useState<any | null>(null);
+    // const [selectedClone, setSelectedClone] = useState<string>("");
+    // const [selectedDate, setSelectedDate] = useState(new Date());
+    // const [optedIn, setOptedIn] = useState<any | null>(null);
     const { colorMode } = useColorMode();
-    const apiUrl = `https://pegasus.lightlink.io/api/v2/addresses/${userAddress}/transactions?filter=from`;
-    const priceApiKey = "44acbe2f2d147775185a828cf204ca20136e149a338310e0c09cd3176876cba0";
-    const [pool, setPool] = useState<any | null>(null);
     const [showTooltip, setShowTooltip] = useState(false);
-    const [sortedTransactions, setSortedTransactions] = useState<Record<string, any[]>>({});
-
-
-
-    const fetchClonesByStrategy = async () => {
-        const chain = PegasusRPC
-        const privateKey = activeAccount?.privateKey;
-        if (!privateKey) {
-            return;
-        }
-        try {
-            setFetching(true);
-            const provider = new ethers.JsonRpcProvider(chain);
-            const connectedWallet = new Wallet(privateKey, provider);
-            const abi = KiteArtifact.abi;
-            const contractAddress = KiteContract;
-            const contract = new ethers.Contract(contractAddress, abi, connectedWallet);
-            const _clones = await contract.getPoolsByStrategies(strategies[parseInt(strategy)].address);
-            console.log("found clones", _clones);
-            setClones(_clones)
-            setFetching(false);
-            return _clones;
-        } catch (e) {
-            console.log("error fetching clones", e);
-            setBalance(0);
-            setPrice(0);
-            setFetching(false);
-        }
-    }
-
-    const fetchClonesByTokens = async () => {
-        const chain = PegasusRPC
-        const privateKey = activeAccount?.privateKey;
-        const tokenAddress = tokens?.filter((x: Asset) => x.token.symbol === selectedToken)[0].token.address
-        if (!privateKey) {
-            return;
-        }
-        try {
-            console.log("checking for this token", tokenAddress)
-            const provider = new ethers.JsonRpcProvider(chain);
-            const connectedWallet = new Wallet(privateKey, provider);
-            const abi = KiteArtifact.abi;
-            const contractAddress = KiteContract;
-            const contract = new ethers.Contract(contractAddress, abi, connectedWallet);
-            const _pool = await contract.getPoolByToken(tokenAddress);
-            if (_pool && _pool !== ethers.ZeroAddress) {
-                setOptedIn(_pool);
-            } else {
-                setOptedIn(null)
-            }
-            setFetching(false);
-            // return _pool;
-        } catch (e) {
-            console.log("error fetching clones", e);
-            setBalance(0);
-            setPrice(0);
-            setFetching(false);
-        }
-    }
-
-    const mockTest = async () => {
-        const chain = PegasusRPC;
-        const privateKey = activeAccount?.privateKey;
-        // console.log(privateKey);
-        if (!privateKey) {
-            return;
-        }
-        try {
-            const _method = "setKiteStrategy";
-            const _param = ["0x057e8e2bC40ECff87e6F9b28750D5E7AC004Eab9"];
-            const provider = new ethers.JsonRpcProvider(chain);
-            const connectedWallet = new Wallet(privateKey, provider);
-            const abi = KiteArtifact.abi;
-            const contract = new ethers.Contract(KiteContract, abi, connectedWallet);
-            const data = contract.interface.encodeFunctionData(_method, _param);
-            const transaction = {
-                to: KiteContract,
-                data: data,
-                value: 0,
-            };
-            const tx = await connectedWallet.sendTransaction(transaction);
-            const txn = await tx.wait();
-            // console.log(txn);
-            if (txn && txn.status === 1) {
-                console.log(txn.hash);
-            }
-        } catch (e) {
-
-        }
-    }
-
-
-
-    const fetchTokens = async () => {
-        const chain = PegasusRPC; //chains_config[selectedChain]
-        const address = activeAccount?.address;
-        if (!address) {
-            return;
-        }
-        const apiUrl = `https://pegasus.lightlink.io/api/v2/addresses/${address}/tokens?type=ERC-20%2CERC-721%2CERC-1155`;
-        const priceApiKey = "44acbe2f2d147775185a828cf204ca20136e149a338310e0c09cd3176876cba0";
-
-        try {
-            const response = await fetch(apiUrl);
-            const data = await response.json();
-            console.log(data);
-            if (response.ok) {
-                const erc20Tokens: any = data.items.filter((token: Asset) => token.token.type === "ERC-20");
-                for (const token of erc20Tokens) {
-                    if (token.token.exchange_rate === null) {
-                        const priceInUSD = await fetchCryptoPriceInUSD(token.token.symbol, priceApiKey);
-                        token.token.exchange_rate = priceInUSD;
-                    }
-                    if (token.token.icon_url === null) {
-                        token.token.icon_url = logo; // Replace with your default icon URL
-                    }
-                }
-                erc20Tokens.forEach((token: Asset) => {
-                    console.log(`Name: ${token.token.name}`);
-                    console.log(`Address: ${token.token.address}`);
-                    console.log(`Balance: ${token.value}`);
-                    console.log(`Exchange Rate: ${token.token.exchange_rate}`);
-                    console.log("---");
-                });
-                setTokens(erc20Tokens);
-            } else {
-                console.error(`Failed to fetch data. Status code: ${response.status}`);
-            }
-        } catch (error: any) {
-            console.error("Error during fetch:", error.message);
-        }
-    };
-
-
-    const getBalance = async () => {
-        const chain = PegasusRPC  //chains_config[selectedChain]
-        const privateKey = activeAccount?.privateKey;
-        console.log(privateKey);
-        if (!privateKey) {
-            return;
-        }
-        try {
-            const provider = new ethers.JsonRpcProvider(chain);
-            const connectedWallet = new Wallet(privateKey, provider);
-            const balance = await connectedWallet.provider?.getBalance(activeAccount.address);
-            console.log("Balance:", balance?.toString());
-            //fix this
-            const roundedBalance = parseFloat(ethers.formatEther(balance as any)).toFixed(Math.max(2, balance?.toString().split(".")[1]?.length || 0))
-            setBalance(parseFloat(roundedBalance));
-            const _price = await fetchCryptoPriceInUSD("ETH", priceApiKey);
-            console.log("price", _price);
-            const value = _price * Number(roundedBalance);
-            setPrice(parseFloat(value.toFixed(2).toString()));
-        } catch (e) {
-            console.log("error fetching balance", e)
-            setBalance(0);
-            setPrice(0);
-        }
-
-    }
-
-    const getPoolDetails = async () => {
-        const chain = PegasusRPC  //chains_config[selectedChain]
-        const privateKey = activeAccount?.privateKey;
-        if (!privateKey || !optedIn) {
-            return;
-        }
-        try {
-            const provider = new ethers.JsonRpcProvider(chain);
-            const connectedWallet = new Wallet(privateKey, provider);
-            const erc20Abi = [
-                "function balanceOf(address owner) view returns (uint256)"
-            ];
-            const poolAbi = [
-                "function getTokenDetails(address token) external view returns (bool, uint256)",
-                "function getShareholders(address token) external view returns (address[] memory, uint256[] memory)"
-            ];
-
-            const tokenAddress = tokens?.filter((x: Asset) => x.token.symbol === selectedToken)[0].token.address
-            const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, provider);
-            const poolContract = new ethers.Contract(optedIn, poolAbi, provider);
-
-            // Get pool details
-            const [isActive, unlockTimestamp] = await poolContract.getTokenDetails(tokenAddress);
-
-            const unlockDate = new Date(Number(unlockTimestamp) * 1000); // Ensure timestamp is in milliseconds
-            const formattedUnlockDate = unlockDate.toLocaleDateString('en-US', {
-                day: "numeric",
-                month: 'long',
-                year: 'numeric'
-            });
-            console.log(formattedUnlockDate)
-            const totalSupply = await tokenContract.balanceOf(optedIn);
-            const formattedTotalSupply = ethers.formatEther(totalSupply);
-            const [addresses, shares] = await poolContract.getShareholders(tokenAddress);
-
-            let myShare = 0;
-            const index = addresses.findIndex((address: string) => address.toLowerCase() === userAddress?.toLowerCase());
-            if (index !== -1) {
-                myShare = parseFloat(ethers.formatEther(shares[index]));
-            }
-
-            const _pool = {
-                address: optedIn,
-                status: isActive ? "Active" : "Inactive",
-                unlock: formattedUnlockDate,
-                totalSupply: formattedTotalSupply,
-                myShare: myShare
-            };
-
-            if (_pool) {
-                console.log("pool details", _pool)
-                setPool(_pool)
-            }
-            return _pool;
-        } catch (e) {
-            console.log("error fetching balance", e)
-            setBalance(0);
-            setPrice(0);
-        }
-
-    }
-
-
-    const handleCreatePool = async () => {
-        //cloning a strategy to create a new pool
-        setContractAddress(KiteContract);
-        setMethod("create");
-        const _params = [
-            strategies[parseInt(strategy)].address,
-            [tokens?.filter((x: Asset) => x.token.symbol === selectedToken)[0].token.address]]
-        setParams(_params)
-        console.log("params for creating pool", _params);
-        navigate("/confirm")
-    }
-
-    const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selected = new Date(event.target.value);
-        const today = new Date();
-        const timeDiff = selected.getTime() - today.getTime();
-        const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        // Ensure the minimum date is the next day
-        const minDate = new Date(today);
-        minDate.setDate(minDate.getDate() + 1);
-
-        if (selected < minDate) {
-            setSelectedDate(minDate);
-        } else {
-            setSelectedDate(selected);
-        }
-    };
-
-
-    const handleOptIn = () => {
-        setContractAddress(KiteContract);
-        setMethod("optIn");
-
-        const _index: any = tokens?.findIndex((token: Asset) => token.token.symbol === selectedToken);
-        const _tokenBal: string = tokens![_index].value;
-        const _bal = parseFloat((ethers.formatEther(_tokenBal!.toString())));
-
-        setAmount(_bal.toString());
-        const __days = Math.max(1, Math.ceil((selectedDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24)));
-        const daysInSeconds = __days * 24 * 60 * 60;
-        //Pool,token,lockPeriod or amount
-        const __params: any = [
-            ethers.getAddress(selectedClone),
-            tokens?.filter((x: Asset) => x.token.symbol === selectedToken)[0].token.address,
-            ethers.parseUnits(daysInSeconds.toString(), 0)
-        ]
-        setParams(__params)
-        console.log("params for opting in to pool", __params);
-        navigate("/confirm")
-    }
-
-    useEffect(() => {
-        if (activeAccount?.address) {
-            if (!balance) {
-                getBalance();
-            } if (!tokens) {
-                fetchTokens();
-            }
-        }
-    }, [activeAccount?.address, balance, tokens]);
-
-
-    useEffect(() => {
-        if (!fetching && strategy && !clones && !optedIn) {
-            fetchClonesByStrategy();
-        }
-    }, [fetching, strategy, clones, optedIn]);
-
-
-    useEffect(() => {
-        if (view === "savings" && selectedToken && !optedIn && fetching) {
-            fetchClonesByTokens();
-        }
-
-    }, [view, fetching, optedIn, selectedToken]);
+    const { price } = useWallet();
+    const {
+        handleDateChange,
+        fetchingSavings,
+        setFetchingSavings,
+        clones,
+        setClones,
+        selectedClone,
+        setSelectedClone,
+        selectedDate,
+        setSelectedDate,
+        optedIn,
+        setOptedIn,
+        handleOptIn,
+        handleCreatePool,
+        getPoolDetails,
+    } = useStrategy(strategy);
 
 
     switch (view) {
@@ -362,21 +73,7 @@ const HomeView = () => {
                         borderRadius={"12px"}
                         border={"0.1px solid rgba(50, 143, 93, 0.3)"}
                         bg="rgba(50, 143, 93, 0.1)"
-
-                    // _before={{
-                    //     content: '""',
-                    //     position: "absolute",
-                    //     top: 0,
-                    //     left: 0,
-                    //     right: 0,
-                    //     bottom: 0,
-                    //     bg: colorMode === "dark" ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
-                    //     backdropFilter: "blur(12px)",
-                    //     borderRadius: "inherit",
-                    // }}
                     >
-
-
                         <Box
                             position="absolute"
                             top="0"
@@ -387,21 +84,6 @@ const HomeView = () => {
                             backdropFilter="blur(12px)"
                             zIndex="-1"
                         />
-
-
-
-
-                        {/* <Box
-                            w="100%"
-                            h="100%"
-                            bg="whiteAlpha.700"
-                            position={"absolute"}
-
-                            sx={{
-                                blur: "12px",
-                                backdropBlur: "15px"
-                            }}
-                        /> */}
                         <Center>
                             <Box w="100%">
                                 <Heading opacity={'0.9'} fontWeight={'semibold'} textAlign={"center"}>{balance !== null ? `${balance} ETH` : '0 ETH'}</Heading>
@@ -421,6 +103,7 @@ const HomeView = () => {
                                         _hover={{
                                             bg: "#2f855a"
                                         }}
+                                        isDisabled={true}
                                         w="120px">Receive</Button>
 
                                     <Button
@@ -449,7 +132,7 @@ const HomeView = () => {
                                         _hover={{
                                             bg: "#2f855a"
                                         }}
-                                        onClick={mockTest}
+                                        isDisabled={true}
                                         w="120px">Bridge</Button>
                                 </HStack>
                             </Box>
@@ -519,7 +202,6 @@ const HomeView = () => {
                             zIndex="-1"
                         />
 
-
                         <Center>
                             <VStack
                                 justifyContent={"space-between"}
@@ -557,8 +239,7 @@ const HomeView = () => {
 
                                     <VStack alignItems={"center"}>
                                         <Button
-                                            // w="40px"
-                                            // h="40px"
+
                                             rounded={"full"}
                                             onClick={() => {
                                                 setView("savings");
@@ -588,12 +269,6 @@ const HomeView = () => {
                         </Center>
                     </Box >
 
-                    {/* <Box mt={8}>
-                        <Center>
-                            <Text fontWeight={"bold"} opacity={0.3}>You have No Transactions</Text>
-                        </Center>
-                    </Box> */}
-
 
                 </>
             );
@@ -605,7 +280,7 @@ const HomeView = () => {
             return (
                 <>
 
-                    {!fetching && !optedIn && (
+                    {!fetchingSavings && !optedIn && (
                         <>
                             <HStack mb={4} justifyContent={"space-between"} alignItems={"center"}>
 
@@ -624,7 +299,7 @@ const HomeView = () => {
 
                                     onClick={() => {
                                         setView("home");
-                                        setFetching(true)
+                                        setFetchingSavings(true)
                                         setStrategy("")
                                         setSelectedClone("")
                                         setSelectedDate(new Date());
@@ -679,7 +354,7 @@ const HomeView = () => {
                                         border={"0.1px solid rgba(50, 143, 93, 0.2)"}
                                     >
                                         <Center>
-                                            {!fetching && clones && clones.length > 0 && (
+                                            {!fetchingSavings && clones && clones.length > 0 && (
                                                 <VStack>
                                                     <Box>
                                                         <FormLabel fontSize={"xs"}>Savings Pool</FormLabel>
@@ -753,7 +428,7 @@ const HomeView = () => {
 
                                             )}
 
-                                            {!fetching && clones && clones.length < 1 && (
+                                            {!fetchingSavings && clones && clones.length < 1 && (
                                                 <Text
                                                     textAlign={"center"}
                                                     fontWeight={"semibold"}
@@ -762,12 +437,12 @@ const HomeView = () => {
                                                     fontSize={"sm"}>You have no existing pool inheriting the {strategies[parseInt(strategy)].name} strategy</Text>
                                             )}
 
-                                            {fetching && (
+                                            {fetchingSavings && (
                                                 <Spinner />
                                             )}
                                         </Center>
 
-                                        {!fetching && clones && clones.length < 1 && (
+                                        {!fetchingSavings && clones && clones.length < 1 && (
                                             <Box mt={8}>
 
                                                 <Center>
@@ -787,13 +462,13 @@ const HomeView = () => {
 
                     )}
 
-                    {fetching &&
+                    {fetchingSavings &&
                         <Center pt={12}>
                             <Spinner />
                         </Center>
                     }
 
-                    {!fetching && optedIn && optedIn.length > 1 && optedIn != ethers.ZeroAddress && (
+                    {!fetchingSavings && optedIn && optedIn.length > 1 && optedIn != ethers.ZeroAddress && (
                         <>
 
                             <HStack my={3} mb={4} justifyContent={"space-between"} alignItems={"center"}>

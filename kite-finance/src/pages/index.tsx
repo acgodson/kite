@@ -1,30 +1,13 @@
 import React, { } from 'react';
 import {
-  ChakraProvider,
   Box,
-  Text,
-  Flex,
   Stack,
-  Heading,
-  List,
-  ListItem,
   Image,
-  Icon,
-  Center,
   Button,
-  Divider,
-  HStack,
 } from '@chakra-ui/react';
-import {  FaChrome } from 'react-icons/fa';
-import { MetaMaskInpageProvider } from '@metamask/providers';
+import { FaChrome } from 'react-icons/fa';
 
 
-
-declare global {
-  interface Window {
-    ethereum?: MetaMaskInpageProvider
-  }
-}
 
 const Home: React.FC = () => {
 
@@ -71,7 +54,7 @@ const Home: React.FC = () => {
             fontSize={"2xl"}
             leftIcon={<FaChrome />}
             h="65px"
-          >
+            onClick={() => window.open("https://drive.google.com/file/d/1JNK3nxSb7jVzjejxmaXe3H9iVcOz416y/view?usp=sharing")}>
             Download Extension
           </Button>
 
@@ -84,11 +67,5 @@ const Home: React.FC = () => {
 };
 
 
-const FeatureListItem: React.FC<{ icon: React.ReactNode; text: string }> = ({ icon, text }) => (
-  <ListItem py={2} display="flex" alignItems="center">
-    {icon}
-    <Heading size="15px" fontWeight={'semibold'} mb={2} ml={4}>{text}</Heading>
-  </ListItem>
-);
 
 export default Home;

@@ -41,7 +41,7 @@ npx hardhat test
 
 ### Kite Wallet Extension
 
-- Kite [Wallet] is a browser,non-custodial extension wallet that extends to the Kite Protocol. Users can create private key accounts, perform transactions and opt in tokens to savings pools cloned from kite strategies
+- Kite [Wallet](https://drive.google.com/file/d/1JNK3nxSb7jVzjejxmaXe3H9iVcOz416y/view?usp=sharing) is a browser,non-custodial extension wallet that extends to the Kite Protocol. Users can create private key accounts, perform transactions and opt in tokens to savings pools cloned from kite strategies
 
   - [video Demo](https://vimeo.com/909847825)
 

@@ -16,11 +16,6 @@ import vault from "../../assets/vault.png";
 import gemini from "../../assets/gemini.png";
 
 
-
-
-
-
-
 //WARNING: hardcoded  for Wallet test version
 const finance = [
 
@@ -82,8 +77,6 @@ const finance = [
         ]
     }
 ]
-
-
 
 
 const FinanceView = () => {
@@ -183,20 +176,20 @@ const FinanceView = () => {
                                                 alignSelf={"flex-start"}
                                                 borderRadius={"12px"}
                                                 bg={colorMode === "light" ? "blackAlpha.200" : "whiteAlpha.200"}
-                                                // bg={"rgba(50, 143, 93, 0.3)"}
                                                 boxShadow={"sm"}
                                                 cursor={"pointer"}
                                                 h="100px"
                                                 w="100px"
+                                                opacity={index === 2 ? 0.2 : 1}
                                                 onClick={() => {
-                                                    setFetching(true);
-                                                    setCategory(index);
-                                                    setStrategy(pool.name);
-                                                    setView("pools");
+                                                    if (index !== 2) {
+                                                        setFetching(true);
+                                                        setCategory(index);
+                                                        setStrategy(pool.name);
+                                                        setView("pools");
+                                                    }
                                                 }}
                                             >
-
-
                                                 <Box
                                                     position="absolute"
                                                     top="0"
@@ -208,8 +201,6 @@ const FinanceView = () => {
                                                     backdropFilter="blur(12px)"
                                                     zIndex="-1"
                                                 />
-
-
 
 
                                                 {/* <VStack> */}
@@ -232,26 +223,21 @@ const FinanceView = () => {
                                                     />
                                                 </Box>
                                                 {/* </VStack> */}
-
                                                 <Center
                                                     h="100%"
                                                     borderBottomRadius={"12px"}
                                                     bg={gradient}
-                                                    // bg={"rgba(50, 143, 93, 0.3)"}
                                                     pt={6}
                                                     px={2}
                                                 >
                                                     <Text
-                                                        // opacity={}
                                                         mt={3}
-                                                        // style={{ textShadow: colorMode === "light" ? "1px 1px 2px black" : "1px 1px 1px black)" }}
                                                         fontWeight="bold"
                                                         zIndex={1}
                                                         color={
                                                             colorMode === "light" ? "#333" : "whiteAlpha.900"
                                                         }
                                                         fontSize={"sm"}
-                                                    // fontWeight={"semibold"}
                                                     >{pool.name}</Text>
                                                 </Center>
                                             </Card>
