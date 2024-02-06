@@ -13,7 +13,7 @@ contract Kite is AccessControl {
     uint256 private constant DECIMALS = 18;
     uint256 public clonesCounter;
 
-    // SafeLock, Flexi, Target, yield etc; 0x5448F14F54f9EBc6E1f3ed96781046500ffCb302
+    // SafeLock, Flexi, Target, yield etc;
     address[] public kiteStrategies;
 
     //Set kite Strategy
@@ -46,7 +46,6 @@ contract Kite is AccessControl {
         uint256 amount
     );
 
-
     modifier onlyAdmin(address pool, address sender) {
         _checkOnlyAdmin(pool, sender);
         _;
@@ -65,7 +64,7 @@ contract Kite is AccessControl {
         require(pool != address(0), "invalid pool");
 
         //Whitelist tokens
-        IStrategy(pool).initialize(tokens); 
+        IStrategy(pool).initialize(tokens);
 
         // // record the user's new strategy
         poolsbyStrategies[msg.sender][kiteStrategyHash].push(pool);
@@ -128,10 +127,7 @@ contract Kite is AccessControl {
     }
 
     // Perfom remittance to savings pool///
-    function performUpKeep(
-        address token,
-        address sender
-    ) external {
+    function performUpKeep(address token, address sender) external {
         //retrieve pool
         address pool = poolbyTokens[sender][token];
         require(pool != address(0), "invalid pool");
@@ -172,7 +168,7 @@ contract Kite is AccessControl {
         uint256 nonce = ++clonesCounter;
         address clone = Clones.cloneDeterministic(
             strategy,
-          keccak256(abi.encodePacked(address(this), nonce))
+            keccak256(abi.encodePacked(address(this), nonce))
         );
         return clone;
     }

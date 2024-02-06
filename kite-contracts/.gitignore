@@ -20,4 +20,4 @@ node_modules
 /contracts/tokens/artifacts
 /contracts/strategies/artifacts
 # /contracts/tokens/artifacts
-hardhat.config.ts
+# hardhat.config.ts
