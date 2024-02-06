@@ -1,8 +1,14 @@
-# 🪁 Kite Finance x Wallet 
+# 🪁 Kite Finance x Wallet
 
-Building an Automatable Savings Account on Lightlink   - [Video 🎥 ](https://vimeo.com/909847825)
+Building an Automatable Savings Account on Lightlink - [Video 🎥 ](https://vimeo.com/909847825)
 
 The Kite is a central hub for managing different savings strategies and pools. It allows users to create savings pools based on predefined strategies, opt into these pools with specific tokens, and manage deposits automatically.
+
+*Built on/with*
+- Lightlink Pegasus testnet, enterprise mode
+- Pegasus/Blockscout API
+- Solidity and hardhat typescript
+- React Typescript & Ethers.js frontend
 
 ## Key Features:
 
@@ -33,21 +39,32 @@ npx hardhat test
 
 [Typescript Test]()
 
-
 ### Kite Wallet Extension
 
 - Kite [Wallet] is a browser,non-custodial extension wallet that extends to the Kite Protocol. Users can create private key accounts, perform transactions and opt in tokens to savings pools cloned from kite strategies
-    - [video Demo](https://vimeo.com/909847825)
 
-    #### Installation
+  - [video Demo](https://vimeo.com/909847825)
 
-    - `Extract Zip folder`
-    - `Load Extension on Chrome`
-    - `Create or Import wallet`
+  #### Installation
 
-   ### Lightlink Upkeep Test
+  - `Extract Zip folder`
+  - `Load Extension on Chrome`
+  - `Create or Import wallet`
 
-   ```
-   cd kite-bot
-   npm start
-   ```
+  ### Lightlink Upkeep Test
+
+  ```
+  cd kite-bot
+  npm start
+  //  dev url http://localhost:4040/
+  ```
+
+### Contributors
+
+| [@acgodson]() | Contracts & Wallet |
+| ------------- | ------------------ |
+| [@Blossom]()  | Design             |
+
+
+Ping us 👋  if you'd like to contribute on kite and more strategy implementations ahead of mainnet.
+
